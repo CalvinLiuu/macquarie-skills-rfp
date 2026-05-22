@@ -1,0 +1,34 @@
+{
+  "tenant_id": "00000000-0000-0000-0000-000000000000",
+  "client_id": "00000000-0000-0000-0000-000000000000",
+  "client_secret_env": "SHAREPOINT_CLIENT_SECRET",
+  "site_id": "contoso.sharepoint.com,site-guid,web-guid",
+  "drive_id": "b!exampleDriveId",
+  "source_library": "Bid Knowledge Library",
+  "truth_source_folder": "RFP Knowledge/True Source",
+  "update_inbox_folder": "RFP Knowledge/Update Inbox",
+  "region": "AUS",
+  "approved_default": false,
+  "allowed_extensions": [
+    ".md",
+    ".txt",
+    ".docx",
+    ".pdf",
+    ".json",
+    ".csv",
+    ".tsv"
+  ],
+  "metadata_fields": {
+    "approved_for_bids": "ApprovedForBids",
+    "owner": "DocumentOwner",
+    "effective_date": "EffectiveDate",
+    "review_date": "ReviewDate",
+    "classification": "Classification"
+  },
+  "paths": {
+    "truth_source_corpus_dir": "data/truth-source",
+    "update_inbox_corpus_dir": "data/update-inbox",
+    "state_dir": "data/state"
+  },
+  "live_unapproved_allowed": false
+}

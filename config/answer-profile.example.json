@@ -1,0 +1,14 @@
+{
+  "output_format": "markdown",
+  "citation_style": "inline-file-reference",
+  "drafting_mode": "evidence-backed-first-draft",
+  "human_review_required": true,
+  "default_conflict_policy": "escalate",
+  "question_type_overrides": {
+    "technical": "Prefer implementation details, service boundaries, controls, and architecture evidence.",
+    "security": "Prefer certified controls, policy statements, audit evidence, and ownership.",
+    "staffing": "Prefer approved biographies, role descriptions, availability assumptions, and delivery model evidence.",
+    "commercial": "Never invent pricing, commercial commitments, or legal terms. Always flag gaps."
+  }
+}
+
