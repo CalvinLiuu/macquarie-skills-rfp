@@ -15,8 +15,10 @@ The curation flow is:
 
 1. Sync `update inbox`.
 2. Normalize staged documents into Markdown.
-3. Compare staged documents to `true source`.
-4. Produce a refresh report with explicit human-review requirements.
+3. Classify staged and trusted documents into specialist lanes such as `rfp`, `macquarie_current_state`, `macquarie_implementation`, `macquarie_guideline`, and `competitor_brochure`.
+4. Build a document analysis plan so the right sub-agent receives only the relevant document set.
+5. Compare staged documents to `true source`.
+6. Produce a refresh report with explicit human-review requirements.
 
 This is intentionally conservative. Staged content should not become trusted drafting material without review.
 
@@ -28,6 +30,7 @@ The response index is built before drafting and should answer:
 - Which knowledge domains are relevant for each question?
 - What response format is expected for each question?
 - Which knowledge packs should the answer use?
+- Which document specialist should interpret the supporting material first?
 - Where does a human owner need to approve, clarify, or supply artifacts?
 
 ## Human Guidance Triggers

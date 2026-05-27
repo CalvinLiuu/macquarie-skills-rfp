@@ -50,6 +50,9 @@ class EvidenceRecord:
     source_path: str = ""
     raw_path: str = ""
     markdown_path: str = ""
+    document_type: str = ""
+    specialist_agent: str = ""
+    analysis_focus: list[str] = field(default_factory=list)
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -83,9 +86,31 @@ class Question:
 
 
 @dataclass
+class RequirementItem:
+    item_id: str
+    item_type: str
+    prompt_text: str
+    original_text: str
+    section: str = ""
+    line_start: int = 0
+    line_end: int = 0
+    mandatory: bool = False
+    response_format: str = "narrative"
+    extraction_confidence: str = "medium"
+
+    def to_dict(self) -> dict[str, Any]:
+        return _deep_convert(self)
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any]) -> "RequirementItem":
+        return cls(**payload)
+
+
+@dataclass
 class BidRequest:
     source_path: str
     questions: list[Question]
+    requirement_items: list[RequirementItem] = field(default_factory=list)
     deadlines: list[str] = field(default_factory=list)
     deliverables: list[str] = field(default_factory=list)
     title: str = ""
@@ -97,9 +122,13 @@ class BidRequest:
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> "BidRequest":
         questions = [Question.from_dict(item) for item in payload.get("questions", [])]
+        requirement_items = [
+            RequirementItem.from_dict(item) for item in payload.get("requirement_items", [])
+        ]
         return cls(
             source_path=payload.get("source_path", ""),
             questions=questions,
+            requirement_items=requirement_items,
             deadlines=payload.get("deadlines", []),
             deliverables=payload.get("deliverables", []),
             title=payload.get("title", ""),
@@ -156,6 +185,7 @@ class SyncResult:
     markdown_documents: int = 0
     markdown_packs: int = 0
     client_segment_packs: int = 0
+    document_type_packs: int = 0
     errors: list[str] = field(default_factory=list)
     delta_link: str = ""
 
@@ -168,6 +198,7 @@ class MarkdownBuildResult:
     documents_written: int = 0
     domain_packs_written: int = 0
     client_segment_packs_written: int = 0
+    document_type_packs_written: int = 0
     index_written: bool = False
     output_dir: str = ""
     files: list[str] = field(default_factory=list)
@@ -183,6 +214,8 @@ class RefreshCandidate:
     proposed_action: str
     source_document_id: str
     target_document_id: str = ""
+    document_type: str = ""
+    specialist_agent: str = ""
     client_segments: list[str] = field(default_factory=list)
     domains: list[str] = field(default_factory=list)
     rationale: str = ""
@@ -199,6 +232,31 @@ class RefreshPlanResult:
     report_path: str = ""
     manifest_path: str = ""
     promoted: int = 0
+
+    def to_dict(self) -> dict[str, Any]:
+        return _deep_convert(self)
+
+
+@dataclass
+class DocumentAnalysisAssignment:
+    document_type: str
+    specialist_agent: str
+    purpose: str
+    analysis_focus: list[str] = field(default_factory=list)
+    document_refs: list[dict[str, Any]] = field(default_factory=list)
+    trusted_count: int = 0
+    staged_count: int = 0
+    approved_count: int = 0
+
+    def to_dict(self) -> dict[str, Any]:
+        return _deep_convert(self)
+
+
+@dataclass
+class DocumentAnalysisPlan:
+    assignments: list[DocumentAnalysisAssignment] = field(default_factory=list)
+    report_path: str = ""
+    manifest_path: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         return _deep_convert(self)

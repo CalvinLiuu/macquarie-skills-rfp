@@ -19,9 +19,9 @@ Workflow:
    - one normalized Markdown file per source document
    - one domain pack per topic such as `security`, `compliance`, `sovereignty`, `power`, and `cooling`
    - one client-segment pack per segment/domain combination such as `government/security`
+   - one document-type pack per specialist lane such as `rfp`, `macquarie_current_state`, `macquarie_implementation`, `macquarie_guideline`, and `competitor_brochure`
    - a Markdown index that makes those packs easy to navigate
 4. Convert the RFP itself into Markdown with `render_rfp_markdown`.
 5. Preserve question relationships by keeping related domains, related client segments, related questions, and suggested evidence packs visible.
 
 The goal is not just format conversion. The Markdown should be structured so later agents can extract facts quickly and safely.
-

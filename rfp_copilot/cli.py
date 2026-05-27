@@ -6,6 +6,7 @@ from pathlib import Path
 
 from .answering import draft_answers_for_bid, package_answers
 from .corpus import CorpusStore
+from .document_analysis import build_document_analysis_plan
 from .markdown_formatter import build_markdown_knowledge_base, render_rfp_markdown
 from .models import AnswerContract
 from .rfp_parser import parse_rfp_file
@@ -48,6 +49,13 @@ def build_parser() -> argparse.ArgumentParser:
     build_docs.add_argument("--output-dir")
     build_docs.add_argument("--config")
     build_docs.add_argument("--folder-key", default="truth_source", choices=["truth_source", "update_inbox"])
+
+    analysis_plan = subparsers.add_parser(
+        "plan-document-analysis",
+        help="Group mirrored documents by type and assign specialist analysis agents",
+    )
+    analysis_plan.add_argument("--corpus-dir", default="data/truth-source")
+    analysis_plan.add_argument("--output-dir", default="data/outputs")
 
     refresh = subparsers.add_parser(
         "prepare-source-refresh",
@@ -127,6 +135,11 @@ def main() -> None:
         else:
             parser.error("build-knowledge-markdown requires either --corpus-dir or --config")
         result = build_markdown_knowledge_base(corpus, output_dir=args.output_dir)
+        print(json.dumps(result.to_dict(), indent=2))
+        return
+    if args.command == "plan-document-analysis":
+        corpus = CorpusStore(args.corpus_dir)
+        result = build_document_analysis_plan(corpus, output_dir=args.output_dir)
         print(json.dumps(result.to_dict(), indent=2))
         return
     if args.command == "prepare-source-refresh":

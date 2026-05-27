@@ -6,6 +6,7 @@ from typing import Any
 
 from .answering import build_answer_contract, package_answers
 from .corpus import CorpusStore
+from .document_analysis import build_document_analysis_plan
 from .markdown_formatter import build_markdown_knowledge_base, render_rfp_markdown
 from .models import AnswerContract, Question
 from .rfp_parser import parse_rfp_file, parse_rfp_text
@@ -43,6 +44,7 @@ TOOLS: list[dict[str, Any]] = [
                 "approved_only": {"type": "boolean", "default": True},
                 "client_segments": {"type": "array"},
                 "domains": {"type": "array"},
+                "document_types": {"type": "array"},
             },
             "required": ["query"],
         },
@@ -106,6 +108,17 @@ TOOLS: list[dict[str, Any]] = [
                 "output_dir": {"type": "string"},
                 "config_path": {"type": "string"},
                 "folder_key": {"type": "string", "default": "truth_source"},
+            },
+        },
+    },
+    {
+        "name": "plan_document_analysis",
+        "description": "Group mirrored documents by type and assign specialist sub-agents for RFP, Macquarie, and competitor analysis.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "corpus_dir": {"type": "string", "default": "data/truth-source"},
+                "output_dir": {"type": "string", "default": "data/outputs"},
             },
         },
     },
@@ -248,12 +261,20 @@ def _call_tool(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
             approved_only=arguments.get("approved_only", True),
             client_segments=arguments.get("client_segments", []),
             domains=arguments.get("domains", []),
+            document_types=arguments.get("document_types", []),
         )
         return {"hits": [hit.to_dict() for hit in hits]}
     if name == "get_evidence_record":
         corpus = CorpusStore(arguments.get("corpus_dir", "data/truth-source"))
         record = corpus.get(arguments["document_id"])
         return {"record": record.to_dict() if record else None}
+    if name == "plan_document_analysis":
+        corpus = CorpusStore(arguments.get("corpus_dir", "data/truth-source"))
+        result = build_document_analysis_plan(
+            corpus,
+            output_dir=arguments.get("output_dir", "data/outputs"),
+        )
+        return result.to_dict()
     if name == "search_sharepoint_live":
         config = SyncConfig.from_file(arguments["config_path"])
         hits = SharePointSyncService(config).search_live(

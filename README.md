@@ -5,7 +5,8 @@ This repository now implements a two-layer SharePoint knowledge model for RFP wo
 - a `true source` folder for trusted, current-state knowledge
 - an `update inbox` folder for newly supplied material that must be curated before it becomes trusted
 - structured Markdown normalization for both source content and incoming RFPs
-- specialist Copilot agents and skills for source curation, RFP analysis, response indexing, drafting, and human review
+- document-type routing that separates RFPs, Macquarie context, and competitor collateral
+- specialist Copilot agents and skills for source curation, document routing, RFP analysis, response indexing, drafting, and human review
 
 ## Repository Layout
 
@@ -28,15 +29,17 @@ The intended workflow is:
    - one Markdown file per source document
    - domain packs like `security`, `compliance`, `sovereignty`, `power`, and `cooling`
    - client-segment packs like `government/security` or `enterprise/power`
-4. Build a source refresh report that compares staged updates against trusted content.
-5. Parse the incoming RFP.
-6. Build a response index that shows:
+   - document-type packs for `rfp`, `macquarie_current_state`, `macquarie_implementation`, `macquarie_guideline`, and `competitor_brochure`
+4. Build a document analysis plan that routes each document type to a dedicated specialist sub-agent.
+5. Build a source refresh report that compares staged updates against trusted content.
+6. Parse the incoming RFP.
+7. Build a response index that shows:
    - question relationships
    - target client segments
    - expected response formats
    - suggested evidence packs
    - human-guidance requirements
-7. Draft evidence-backed answers only after the response index is ready.
+8. Draft evidence-backed answers only after the response index is ready.
 
 ## Assumptions Used In This V1
 
@@ -97,14 +100,22 @@ python3 -m rfp_copilot.cli build-knowledge-markdown \
   --folder-key truth_source
 ```
 
-8. Build the source refresh report:
+8. Build the document analysis plan:
+
+```bash
+python3 -m rfp_copilot.cli plan-document-analysis \
+  --corpus-dir data/truth-source \
+  --output-dir data/outputs
+```
+
+9. Build the source refresh report:
 
 ```bash
 python3 -m rfp_copilot.cli prepare-source-refresh \
   --config config/knowledge-source.json
 ```
 
-9. Promote an approved refresh candidate into the local true-source corpus:
+10. Promote an approved refresh candidate into the local true-source corpus:
 
 ```bash
 python3 -m rfp_copilot.cli promote-source-refresh \
@@ -112,7 +123,7 @@ python3 -m rfp_copilot.cli promote-source-refresh \
   --candidate-id refresh-example
 ```
 
-10. Render the RFP into structured Markdown:
+11. Render the RFP into structured Markdown:
 
 ```bash
 python3 -m rfp_copilot.cli render-rfp-markdown \
@@ -120,7 +131,7 @@ python3 -m rfp_copilot.cli render-rfp-markdown \
   --output data/outputs/sample-rfp-structured.md
 ```
 
-11. Build the response index:
+12. Build the response index:
 
 ```bash
 python3 -m rfp_copilot.cli render-response-index \
@@ -134,6 +145,11 @@ The repository is designed to support:
 
 - `rfp-orchestrator`: end-to-end coordination
 - `source-curator`: update-inbox curation and refresh reporting
+- `rfp-requirements-analyst`: tender-specific requirement analysis
+- `macquarie-current-state-analyst`: current-state estate and incumbent context
+- `macquarie-implementation-analyst`: implementation history and lessons learned
+- `macquarie-guideline-analyst`: standards, guardrails, and policy interpretation
+- `competitor-brochure-analyst`: competitor collateral and positioning analysis
 - `rfp-analyst`: RFP parsing and relationship mapping
 - `response-indexer`: response production planning
 - `human-guidance-review`: explicit review gates before submission

@@ -7,7 +7,13 @@ from .corpus import CorpusStore
 from .markdown_formatter import build_markdown_knowledge_base
 from .models import EvidenceRecord, RefreshCandidate, RefreshPlanResult
 from .sharepoint_graph import SharePointSyncService, SyncConfig
-from .taxonomy import normalize_title_key, rank_domain_overlap, rank_segment_overlap
+from .taxonomy import (
+    analysis_focus_for_document_type,
+    normalize_title_key,
+    rank_domain_overlap,
+    rank_segment_overlap,
+    specialist_agent_for_document_type,
+)
 
 
 class SourceRefreshService:
@@ -128,6 +134,8 @@ class SourceRefreshService:
             proposed_action=action,
             source_document_id=staged.document_id,
             target_document_id=match.document_id if match else "",
+            document_type=staged.document_type,
+            specialist_agent=staged.specialist_agent or specialist_agent_for_document_type(staged.document_type),
             client_segments=staged.client_segments,
             domains=staged.domains,
             rationale=rationale,
@@ -185,5 +193,8 @@ class SourceRefreshService:
             source_path=staged.source_path,
             raw_path=staged.raw_path,
             markdown_path="",
+            document_type=staged.document_type,
+            specialist_agent=staged.specialist_agent,
+            analysis_focus=staged.analysis_focus or analysis_focus_for_document_type(staged.document_type),
             metadata=staged.metadata,
         )

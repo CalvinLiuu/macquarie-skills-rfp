@@ -13,7 +13,13 @@ from .corpus import CorpusStore, chunk_text
 from .markdown_formatter import build_markdown_knowledge_base
 from .models import EvidenceRecord, SyncResult
 from .rfp_parser import UnsupportedFormatError, extract_text_from_binary
-from .taxonomy import detect_client_segments, detect_domains
+from .taxonomy import (
+    analysis_focus_for_document_type,
+    detect_client_segments,
+    detect_document_type,
+    detect_domains,
+    specialist_agent_for_document_type,
+)
 
 
 GRAPH_BASE_URL = "https://graph.microsoft.com/v1.0"
@@ -249,6 +255,7 @@ class SharePointSyncService:
         result.markdown_documents = markdown_result.documents_written
         result.markdown_packs = markdown_result.domain_packs_written
         result.client_segment_packs = markdown_result.client_segment_packs_written
+        result.document_type_packs = markdown_result.document_type_packs_written
         result.delta_link = delta_link
         self._save_state({"delta_link": delta_link})
         return result
@@ -294,6 +301,13 @@ class SharePointSyncService:
             return
         fields = self.client.get_item_fields(self.config.drive_id, item["id"])
         raw_path = self.corpus.write_raw_text(item["id"], text)
+        source_path = self._item_path(item)
+        document_type = detect_document_type(
+            source_path,
+            filename,
+            text,
+            metadata_value=self._lookup_field(fields, "document_type"),
+        )
         record = EvidenceRecord(
             document_id=item["id"],
             source_url=item.get("webUrl", ""),
@@ -307,10 +321,13 @@ class SharePointSyncService:
             version=item.get("eTag", item.get("cTag", "")),
             text_chunks=chunk_text(text),
             domains=detect_domains(filename, text),
-            client_segments=detect_client_segments(self._item_path(item), filename, text),
+            client_segments=detect_client_segments(source_path, filename, text),
             source_collection=self.folder_key,
-            source_path=self._item_path(item),
+            source_path=source_path,
             raw_path=str(raw_path),
+            document_type=document_type,
+            specialist_agent=specialist_agent_for_document_type(document_type),
+            analysis_focus=analysis_focus_for_document_type(document_type),
             metadata=fields,
         )
         self.corpus.upsert(record)

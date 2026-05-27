@@ -44,15 +44,19 @@ class MarkdownFormatterTests(unittest.TestCase):
         self.assertEqual(result.documents_written, 1)
         self.assertEqual(result.domain_packs_written, 2)
         self.assertEqual(result.client_segment_packs_written, 3)
+        self.assertEqual(result.document_type_packs_written, 1)
         document_path = self.temp_dir / "mirror" / "markdown" / "documents" / "doc-1-security-and-sovereignty.md"
         security_pack = self.temp_dir / "mirror" / "markdown" / "domains" / "security.md"
         sovereignty_pack = self.temp_dir / "mirror" / "markdown" / "domains" / "sovereignty.md"
         general_segment_pack = self.temp_dir / "mirror" / "markdown" / "client-segments" / "general" / "security.md"
+        document_type_pack = self.temp_dir / "mirror" / "markdown" / "document-types" / "general_knowledge.md"
         self.assertTrue(document_path.exists())
         self.assertTrue(security_pack.exists())
         self.assertTrue(sovereignty_pack.exists())
         self.assertTrue(general_segment_pack.exists())
+        self.assertTrue(document_type_pack.exists())
         self.assertIn("Structured Evidence", document_path.read_text(encoding="utf-8"))
+        self.assertIn("specialist_agent", document_path.read_text(encoding="utf-8"))
 
     def test_render_rfp_markdown_includes_question_relationships(self) -> None:
         questions = [

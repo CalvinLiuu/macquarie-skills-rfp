@@ -10,18 +10,24 @@ def build_response_index_payload(bid_request: BidRequest) -> dict:
     high_touch = [question for question in bid_request.questions if question.human_guidance_required]
     by_format: dict[str, int] = {}
     by_domain: dict[str, int] = {}
+    by_requirement_type: dict[str, int] = {}
     for question in bid_request.questions:
         by_format[question.response_format] = by_format.get(question.response_format, 0) + 1
         for domain in question.related_domains or ["general"]:
             by_domain[domain] = by_domain.get(domain, 0) + 1
+    for item in bid_request.requirement_items:
+        by_requirement_type[item.item_type] = by_requirement_type.get(item.item_type, 0) + 1
     return {
         "title": bid_request.title,
         "source_path": bid_request.source_path,
         "target_client_segments": bid_request.target_client_segments,
+        "requirement_count": len(bid_request.requirement_items),
         "question_count": len(bid_request.questions),
         "high_touch_count": len(high_touch),
+        "by_requirement_type": by_requirement_type,
         "by_format": by_format,
         "by_domain": by_domain,
+        "requirement_items": [item.to_dict() for item in bid_request.requirement_items],
         "questions": [question.to_dict() for question in bid_request.questions],
     }
 
@@ -32,6 +38,7 @@ def render_response_index_markdown(bid_request: BidRequest) -> str:
         f"# {bid_request.title or 'RFP Response Index'}",
         "",
         "## Summary",
+        f"- Requirement items: {payload['requirement_count']}",
         f"- Question count: {payload['question_count']}",
         f"- High-touch questions: {payload['high_touch_count']}",
         (
@@ -40,8 +47,14 @@ def render_response_index_markdown(bid_request: BidRequest) -> str:
             else "- Target client segments: not inferred"
         ),
         "",
-        "## Response Format Mix",
+        "## Requirement Mix",
     ]
+    for key, value in sorted(payload["by_requirement_type"].items()):
+        lines.append(f"- {key}: {value}")
+    lines.extend([
+        "",
+        "## Response Format Mix",
+    ])
     for key, value in sorted(payload["by_format"].items()):
         lines.append(f"- {key}: {value}")
     lines.extend(["", "## Domain Coverage"])

@@ -59,6 +59,34 @@ class CorpusStoreTests(unittest.TestCase):
         chunks = chunk_text(text, max_chars=300)
         self.assertGreater(len(chunks), 1)
 
+    def test_search_can_filter_by_document_type(self) -> None:
+        self.corpus.upsert(
+            EvidenceRecord(
+                document_id="doc-3",
+                source_url="https://example.com/doc-3",
+                source_library="Library",
+                title="Competitor Brochure",
+                owner="Strategy",
+                effective_date="2026-01-01",
+                review_date="2026-12-31",
+                classification="internal",
+                approved_for_bids=True,
+                version="1",
+                text_chunks=["Competitor brochure covering sovereign hosting and security controls."],
+                document_type="competitor_brochure",
+                specialist_agent="competitor-brochure-analyst",
+            )
+        )
+
+        hits = self.corpus.search(
+            "sovereign hosting security",
+            limit=5,
+            document_types=["competitor_brochure"],
+        )
+
+        self.assertEqual(len(hits), 1)
+        self.assertEqual(hits[0].record.document_id, "doc-3")
+
 
 if __name__ == "__main__":
     unittest.main()

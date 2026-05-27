@@ -92,6 +92,7 @@ class CorpusStore:
         approved_only: bool = True,
         client_segments: list[str] | None = None,
         domains: list[str] | None = None,
+        document_types: list[str] | None = None,
     ) -> list[SearchHit]:
         query_tokens = tokenize(query)
         if not query_tokens:
@@ -99,6 +100,8 @@ class CorpusStore:
         hits: list[SearchHit] = []
         for record in self.list_records():
             if approved_only and not record.approved_for_bids:
+                continue
+            if document_types and record.document_type not in set(document_types):
                 continue
             best_score = 0.0
             best_excerpt = ""
@@ -146,6 +149,8 @@ class CorpusStore:
                 record.classification,
                 " ".join(record.domains),
                 " ".join(record.client_segments),
+                record.document_type,
+                record.specialist_agent,
             ]
         ).lower()
         chunk_tokens = tokenize(text)

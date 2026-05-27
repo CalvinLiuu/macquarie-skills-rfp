@@ -7,14 +7,26 @@ from .corpus import CorpusStore
 from .models import BidRequest, EvidenceRecord, MarkdownBuildResult, Question
 from .taxonomy import (
     DOMAIN_ORDER,
+    analysis_focus_for_document_type,
     detect_client_segments,
+    detect_document_type,
     detect_domains,
+    document_type_label,
+    document_type_purpose,
+    specialist_agent_for_document_type,
     summarize_chunk,
 )
 
 
 def build_document_markdown(record: EvidenceRecord) -> str:
     domains = record.domains or detect_domains(record.title, " ".join(record.text_chunks))
+    document_type = record.document_type or detect_document_type(
+        record.source_path,
+        record.title,
+        " ".join(record.text_chunks),
+    )
+    specialist_agent = record.specialist_agent or specialist_agent_for_document_type(document_type)
+    analysis_focus = record.analysis_focus or analysis_focus_for_document_type(document_type)
     chunk_map = _group_chunks_by_domain(record)
     lines = [
         "---",
@@ -30,6 +42,9 @@ def build_document_markdown(record: EvidenceRecord) -> str:
         f"version: {record.version}",
         f"domains: [{', '.join(domains)}]",
         f"client_segments: [{', '.join(record.client_segments)}]",
+        f"document_type: {document_type}",
+        f"specialist_agent: {specialist_agent}",
+        f"analysis_focus: [{' | '.join(analysis_focus)}]",
         f"source_collection: {record.source_collection}",
         f"source_path: {record.source_path}",
         "---",
@@ -45,10 +60,23 @@ def build_document_markdown(record: EvidenceRecord) -> str:
         f"- Classification: {record.classification or 'Unknown'}",
         f"- Approved for bids: {'Yes' if record.approved_for_bids else 'No'}",
         f"- Client segments: {', '.join(record.client_segments) if record.client_segments else 'general'}",
+        f"- Document type: {document_type_label(document_type)}",
+        f"- Specialist agent: `{specialist_agent}`",
         f"- Source collection: {record.source_collection}",
         "",
-        "## Coverage Domains",
+        "## Specialist Brief",
+        document_type_purpose(document_type),
+        "",
+        "### Analysis Focus",
     ]
+    for focus in analysis_focus:
+        lines.append(f"- {focus}")
+    lines.extend(
+        [
+            "",
+        "## Coverage Domains",
+        ]
+    )
     if domains:
         for domain in domains:
             lines.append(f"- {domain}")
@@ -89,14 +117,17 @@ def build_markdown_knowledge_base(
     documents_dir = base_dir / "documents"
     domains_dir = base_dir / "domains"
     segments_dir = base_dir / "client-segments"
+    document_types_dir = base_dir / "document-types"
     documents_dir.mkdir(parents=True, exist_ok=True)
     domains_dir.mkdir(parents=True, exist_ok=True)
     segments_dir.mkdir(parents=True, exist_ok=True)
+    document_types_dir.mkdir(parents=True, exist_ok=True)
 
     result = MarkdownBuildResult(output_dir=str(base_dir))
     records = corpus.list_records()
     domain_map: dict[str, list[EvidenceRecord]] = {}
     segment_domain_map: dict[str, dict[str, list[EvidenceRecord]]] = {}
+    document_type_map: dict[str, list[EvidenceRecord]] = {}
 
     for record in records:
         if not record.domains:
@@ -107,6 +138,16 @@ def build_markdown_knowledge_base(
                 record.title,
                 " ".join(record.text_chunks),
             )
+        if not record.document_type:
+            record.document_type = detect_document_type(
+                record.source_path,
+                record.title,
+                " ".join(record.text_chunks),
+            )
+        if not record.specialist_agent:
+            record.specialist_agent = specialist_agent_for_document_type(record.document_type)
+        if not record.analysis_focus:
+            record.analysis_focus = analysis_focus_for_document_type(record.document_type)
         filename = f"{record.document_id}-{slugify(record.title)}.md"
         document_path = documents_dir / filename
         document_path.write_text(build_document_markdown(record), encoding="utf-8")
@@ -114,6 +155,7 @@ def build_markdown_knowledge_base(
         corpus.upsert(record)
         result.documents_written += 1
         result.files.append(str(document_path))
+        document_type_map.setdefault(record.document_type, []).append(record)
         for domain in record.domains or ["general"]:
             domain_map.setdefault(domain, []).append(record)
             for segment in record.client_segments or ["general"]:
@@ -141,8 +183,20 @@ def build_markdown_knowledge_base(
             result.client_segment_packs_written += 1
             result.files.append(str(pack_path))
 
+    for document_type, records_for_type in sorted(document_type_map.items()):
+        pack_path = document_types_dir / f"{document_type}.md"
+        pack_path.write_text(
+            build_document_type_pack_markdown(document_type, records_for_type),
+            encoding="utf-8",
+        )
+        result.document_type_packs_written += 1
+        result.files.append(str(pack_path))
+
     index_path = base_dir / "index.md"
-    index_path.write_text(build_markdown_index(domain_map, segment_domain_map, records), encoding="utf-8")
+    index_path.write_text(
+        build_markdown_index(domain_map, segment_domain_map, document_type_map, records),
+        encoding="utf-8",
+    )
     result.index_written = True
     result.files.append(str(index_path))
     return result
@@ -185,6 +239,7 @@ def build_domain_pack_markdown(domain: str, records: list[EvidenceRecord]) -> st
 def build_markdown_index(
     domain_map: dict[str, list[EvidenceRecord]],
     segment_domain_map: dict[str, dict[str, list[EvidenceRecord]]],
+    document_type_map: dict[str, list[EvidenceRecord]],
     records: list[EvidenceRecord],
 ) -> str:
     lines = [
@@ -195,6 +250,11 @@ def build_markdown_index(
     ]
     for domain in sorted(domain_map):
         lines.append(f"- [{domain.title()}](domains/{domain}.md)")
+    lines.extend(["", "## Document Type Packs", ""])
+    for document_type in sorted(document_type_map):
+        lines.append(
+            f"- [{document_type_label(document_type)}](document-types/{document_type}.md)"
+        )
     lines.extend(["", "## Client Segment Packs", ""])
     for segment in sorted(segment_domain_map):
         lines.append(f"- [{segment.title()}](client-segments/{segment}/index.md)")
@@ -203,7 +263,46 @@ def build_markdown_index(
         filename = f"{record.document_id}-{slugify(record.title)}.md"
         domain_label = ", ".join(record.domains or ["general"])
         segment_label = ", ".join(record.client_segments or ["general"])
-        lines.append(f"- [{record.title}](documents/{filename}) - {segment_label} / {domain_label}")
+        type_label = document_type_label(record.document_type or "general_knowledge")
+        lines.append(
+            f"- [{record.title}](documents/{filename}) - {type_label} - {segment_label} / {domain_label}"
+        )
+    return "\n".join(lines).strip() + "\n"
+
+
+def build_document_type_pack_markdown(
+    document_type: str,
+    records: list[EvidenceRecord],
+) -> str:
+    label = document_type_label(document_type)
+    specialist_agent = specialist_agent_for_document_type(document_type)
+    lines = [
+        f"# {label} Pack",
+        "",
+        "## Specialist Routing",
+        f"- Recommended specialist agent: `{specialist_agent}`",
+        f"- Purpose: {document_type_purpose(document_type)}",
+        "- Analysis focus:",
+    ]
+    for focus in analysis_focus_for_document_type(document_type):
+        lines.append(f"  - {focus}")
+    lines.extend(["", "## Source Documents", ""])
+    for record in sorted(records, key=lambda item: item.title.lower()):
+        lines.extend(
+            [
+                f"### {record.title}",
+                f"- Document ID: `{record.document_id}`",
+                f"- Source collection: {record.source_collection}",
+                f"- Source path: {record.source_path or 'Unknown'}",
+                f"- Approved for bids: {'Yes' if record.approved_for_bids else 'No'}",
+                f"- Owner: {record.owner or 'Unknown'}",
+                "- Relevant notes:",
+            ]
+        )
+        for note in [_build_summary(record)]:
+            if note:
+                lines.append(f"  - {note}")
+        lines.append("")
     return "\n".join(lines).strip() + "\n"
 
 

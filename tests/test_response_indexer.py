@@ -20,6 +20,7 @@ class ResponseIndexerTests(unittest.TestCase):
 
         payload = build_response_index_payload(bid)
 
+        self.assertEqual(payload["requirement_count"], 2)
         self.assertEqual(payload["question_count"], 2)
         self.assertEqual(payload["high_touch_count"], 2)
         self.assertIn("government", payload["target_client_segments"])
@@ -29,10 +30,10 @@ class ResponseIndexerTests(unittest.TestCase):
 
         markdown = render_response_index_markdown(bid)
 
+        self.assertIn("Requirement items: 1", markdown)
         self.assertIn("Response format: attachment", markdown)
         self.assertIn("Human guidance: Yes", markdown)
 
 
 if __name__ == "__main__":
     unittest.main()
-

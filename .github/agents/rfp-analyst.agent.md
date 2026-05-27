@@ -18,4 +18,4 @@ You turn a raw RFP into a structured understanding artifact.
 - Parse the RFP.
 - Render the RFP into Markdown.
 - Identify related questions, domains, and client segments.
-
+- Treat the RFP lane as distinct from Macquarie context and competitor collateral.

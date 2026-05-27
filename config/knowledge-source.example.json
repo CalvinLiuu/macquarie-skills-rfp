@@ -23,7 +23,8 @@
     "owner": "DocumentOwner",
     "effective_date": "EffectiveDate",
     "review_date": "ReviewDate",
-    "classification": "Classification"
+    "classification": "Classification",
+    "document_type": "DocumentType"
   },
   "paths": {
     "truth_source_corpus_dir": "data/truth-source",

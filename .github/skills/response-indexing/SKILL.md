@@ -17,6 +17,5 @@ Workflow:
    - table
    - attachment
    - yes-no
-3. Use the response index to route work to the right knowledge packs and owners.
+3. Use the response index to route work to the right knowledge packs, document specialists, and owners.
 4. Keep human-guidance flags visible instead of treating them as noise.
-

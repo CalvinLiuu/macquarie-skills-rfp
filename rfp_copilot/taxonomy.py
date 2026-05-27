@@ -148,6 +148,96 @@ CLIENT_SEGMENT_KEYWORDS: dict[str, tuple[str, ...]] = {
 CLIENT_SEGMENT_ORDER = list(CLIENT_SEGMENT_KEYWORDS.keys())
 CLIENT_SEGMENT_PACK_TEMPLATE = "client-segments/{segment}/{domain}.md"
 
+DOCUMENT_TYPE_ORDER = [
+    "rfp",
+    "macquarie_current_state",
+    "macquarie_implementation",
+    "macquarie_guideline",
+    "competitor_brochure",
+    "general_knowledge",
+]
+
+DOCUMENT_TYPE_LABELS: dict[str, str] = {
+    "rfp": "RFP",
+    "macquarie_current_state": "Macquarie Current State",
+    "macquarie_implementation": "Macquarie Implementation",
+    "macquarie_guideline": "Macquarie Guideline",
+    "competitor_brochure": "Competitor Brochure",
+    "general_knowledge": "General Knowledge",
+}
+
+SPECIALIST_AGENT_BY_DOCUMENT_TYPE: dict[str, str] = {
+    "rfp": "rfp-requirements-analyst",
+    "macquarie_current_state": "macquarie-current-state-analyst",
+    "macquarie_implementation": "macquarie-implementation-analyst",
+    "macquarie_guideline": "macquarie-guideline-analyst",
+    "competitor_brochure": "competitor-brochure-analyst",
+    "general_knowledge": "general-knowledge-analyst",
+}
+
+DOCUMENT_TYPE_PURPOSE: dict[str, str] = {
+    "rfp": "Interpret the tender itself, identify requirement intent, and capture what good and bad answers look like.",
+    "macquarie_current_state": "Summarize Macquarie's current estate, incumbent arrangements, and existing constraints.",
+    "macquarie_implementation": "Review Macquarie implementation history, recent delivery changes, and lessons learned.",
+    "macquarie_guideline": "Extract Macquarie guardrails, standards, policies, and approval boundaries.",
+    "competitor_brochure": "Assess competitor positioning, brochure claims, and differentiators to sharpen bid strategy.",
+    "general_knowledge": "Capture reusable product, service, and capability evidence that does not fit a specialist lane.",
+}
+
+DOCUMENT_ANALYSIS_FOCUS: dict[str, list[str]] = {
+    "rfp": [
+        "Mandatory requirements and evaluation criteria.",
+        "What prior responses did well or poorly against similar asks.",
+        "Attachments, deadlines, and answer-format constraints.",
+    ],
+    "macquarie_current_state": [
+        "Current platforms, operating model, and incumbent services.",
+        "Known pain points, dependencies, and transition constraints.",
+        "Signals that explain why the RFP exists now.",
+    ],
+    "macquarie_implementation": [
+        "Recent implementation choices, rollout outcomes, and delivery lessons.",
+        "Technology changes that should shape the proposed solution.",
+        "Operational implications of new platforms or migrations.",
+    ],
+    "macquarie_guideline": [
+        "Non-negotiable standards, policies, and governance controls.",
+        "Approval points, compliance obligations, and mandatory wording boundaries.",
+        "Artifacts or evidence that Macquarie expects suppliers to provide.",
+    ],
+    "competitor_brochure": [
+        "Competitor claims, capability themes, and marketing emphasis.",
+        "Strengths to counter, gaps to exploit, and differentiators to emphasize.",
+        "Reusable market language that should not be copied as fact without validation.",
+    ],
+    "general_knowledge": [
+        "Reusable service evidence and factual capability statements.",
+        "Source freshness, ownership, and bid approval status.",
+    ],
+}
+
+DOCUMENT_TYPE_ALIASES: dict[str, str] = {
+    "request_for_proposal": "rfp",
+    "request_for_tender": "rfp",
+    "tender": "rfp",
+    "rfq": "rfp",
+    "macquarie_current": "macquarie_current_state",
+    "current_state": "macquarie_current_state",
+    "existing_state": "macquarie_current_state",
+    "macquarie_existing_state": "macquarie_current_state",
+    "macquarie_current_state": "macquarie_current_state",
+    "macquarie_implementation": "macquarie_implementation",
+    "implementation": "macquarie_implementation",
+    "macquarie_guideline": "macquarie_guideline",
+    "guideline": "macquarie_guideline",
+    "policy": "macquarie_guideline",
+    "competitor": "competitor_brochure",
+    "competitor_brochure": "competitor_brochure",
+    "brochure": "competitor_brochure",
+    "general": "general_knowledge",
+    "general_knowledge": "general_knowledge",
+}
+
 
 def detect_domains(*parts: str) -> list[str]:
     text = " ".join(part for part in parts if part).lower()
@@ -167,6 +257,89 @@ def detect_client_segments(*parts: str) -> list[str]:
         if any(keyword in text for keyword in keywords):
             matches.append(segment)
     return matches
+
+
+def normalize_document_type(value: str) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "_", value.lower()).strip("_")
+    return DOCUMENT_TYPE_ALIASES.get(slug, slug if slug in DOCUMENT_TYPE_LABELS else "general_knowledge")
+
+
+def detect_document_type(*parts: str, metadata_value: str = "") -> str:
+    if metadata_value:
+        normalized = normalize_document_type(metadata_value)
+        if normalized in DOCUMENT_TYPE_LABELS:
+            return normalized
+
+    text = " ".join(part for part in parts if part).lower()
+    mentions_macquarie = "macquarie" in text
+    mentions_competitor = any(token in text for token in ("competitor", "comparison", "benchmark", "alternative"))
+
+    if _contains_any(
+        text,
+        (
+            "request for proposal",
+            "request for tender",
+            "rfp",
+            "rfq",
+            "tender response",
+            "supplier questionnaire",
+            "bid questionnaire",
+            "pricing schedule",
+        ),
+    ):
+        return "rfp"
+    if _contains_any(text, ("current state", "current environment", "existing environment", "as is", "baseline", "incumbent", "existing estate")):
+        return "macquarie_current_state" if mentions_macquarie or "/current-state/" in text else "general_knowledge"
+    if _contains_any(text, ("implementation", "migration", "rollout", "deployment", "cutover", "transition", "uplift", "modernisation", "modernization")):
+        return "macquarie_implementation" if mentions_macquarie else "general_knowledge"
+    if _contains_any(text, ("guideline", "policy", "standard", "playbook", "guardrail", "governance", "framework", "principle")):
+        return "macquarie_guideline" if mentions_macquarie else "general_knowledge"
+    if mentions_competitor and _contains_any(
+        text,
+        (
+            "brochure",
+            "datasheet",
+            "data sheet",
+            "capability statement",
+            "capability deck",
+            "sales deck",
+            "product sheet",
+            "service overview",
+            "solution overview",
+            "flyer",
+        ),
+    ):
+        return "competitor_brochure"
+    if mentions_macquarie:
+        if "guideline" in text or "policy" in text or "standard" in text:
+            return "macquarie_guideline"
+        if "implementation" in text or "migration" in text or "rollout" in text:
+            return "macquarie_implementation"
+        if "current" in text or "existing" in text:
+            return "macquarie_current_state"
+    return "general_knowledge"
+
+
+def document_type_label(document_type: str) -> str:
+    return DOCUMENT_TYPE_LABELS.get(document_type, document_type.replace("_", " ").title())
+
+
+def specialist_agent_for_document_type(document_type: str) -> str:
+    normalized = normalize_document_type(document_type)
+    return SPECIALIST_AGENT_BY_DOCUMENT_TYPE.get(normalized, "general-knowledge-analyst")
+
+
+def document_type_purpose(document_type: str) -> str:
+    normalized = normalize_document_type(document_type)
+    return DOCUMENT_TYPE_PURPOSE.get(
+        normalized,
+        DOCUMENT_TYPE_PURPOSE["general_knowledge"],
+    )
+
+
+def analysis_focus_for_document_type(document_type: str) -> list[str]:
+    normalized = normalize_document_type(document_type)
+    return list(DOCUMENT_ANALYSIS_FOCUS.get(normalized, DOCUMENT_ANALYSIS_FOCUS["general_knowledge"]))
 
 
 def infer_bid_client_segments(*parts: str) -> list[str]:
@@ -278,6 +451,10 @@ def rank_domain_overlap(left: list[str], right: list[str]) -> int:
 
 def guess_client_segment_from_path(path: str) -> list[str]:
     return detect_client_segments(path)
+
+
+def _contains_any(text: str, phrases: tuple[str, ...]) -> bool:
+    return any(phrase in text for phrase in phrases)
 
 
 def _question_type_to_domain(question_type: str) -> str:

@@ -43,6 +43,7 @@ class FakeGraphClient:
             "Classification": "internal",
             "EffectiveDate": "2026-01-01",
             "ReviewDate": "2026-12-31",
+            "DocumentType": "Macquarie Guideline",
         }
 
     def search_drive_items(self, query: str, limit: int = 5, region: str = "") -> list[dict]:
@@ -72,6 +73,7 @@ class SharePointSyncTests(unittest.TestCase):
                 "effective_date": "EffectiveDate",
                 "review_date": "ReviewDate",
                 "classification": "Classification",
+                "document_type": "DocumentType",
             },
             approved_default=False,
         )
@@ -89,11 +91,14 @@ class SharePointSyncTests(unittest.TestCase):
         self.assertEqual(result.markdown_documents, 1)
         self.assertEqual(result.markdown_packs, 1)
         self.assertEqual(result.client_segment_packs, 2)
+        self.assertEqual(result.document_type_packs, 1)
         self.assertEqual(result.delta_link, "delta-token-1")
         self.assertIsNotNone(record)
         assert record is not None
         self.assertTrue(record.approved_for_bids)
         self.assertEqual(record.owner, "Security Team")
+        self.assertEqual(record.document_type, "macquarie_guideline")
+        self.assertEqual(record.specialist_agent, "macquarie-guideline-analyst")
         self.assertTrue(Path(record.markdown_path).exists())
 
     def test_source_folder_scope_is_respected(self) -> None:
