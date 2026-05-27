@@ -1,0 +1,14 @@
+__pycache__/
+.pytest_cache/
+.venv/
+*.pyc
+data/truth-source/*
+data/update-inbox/*
+data/mirror/*
+data/outputs/*
+data/state/*
+!data/truth-source/.gitkeep
+!data/update-inbox/.gitkeep
+!data/mirror/.gitkeep
+!data/outputs/.gitkeep
+!data/state/.gitkeep
