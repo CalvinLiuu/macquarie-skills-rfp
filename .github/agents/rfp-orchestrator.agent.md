@@ -33,6 +33,8 @@ Operate with these rules:
 
 Break the task into these repository skills:
 
+- `mark-successful-rfp-document-information`
+- `refresh-successful-document-information`
 - `documentation-normalization`
 - `document-routing`
 - `source-refresh`
@@ -46,6 +48,7 @@ Break the task into these repository skills:
 
 Suggested workflow:
 
+- Run `describe_sharepoint_structure` when folder layout or business-action routing is unclear.
 - Sync `truth_source` and `update_inbox`.
 - Run `prepare_source_refresh` when new staged material arrives.
 - Build the true-source Markdown knowledge base.

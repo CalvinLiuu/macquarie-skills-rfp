@@ -51,6 +51,20 @@ class FakeGraphClient:
         return [{"id": "doc-1", "name": "security.md", "webUrl": "https://example.com/security"}]
 
 
+class SegmentFolderGraphClient(FakeGraphClient):
+    def __init__(self) -> None:
+        super().__init__()
+        self.pages[0]["value"][0]["name"] = "winning-response.md"
+        self.pages[0]["value"][0]["parentReference"] = {
+            "path": "/drives/drive/root:/RFP Knowledge/Client Segments/Enterprise/Successful RFPs"
+        }
+
+    def get_item_fields(self, drive_id: str, item_id: str) -> dict:
+        fields = super().get_item_fields(drive_id, item_id)
+        fields.pop("DocumentType", None)
+        return fields
+
+
 class SharePointSyncTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temp_dir = Path(tempfile.mkdtemp())
@@ -117,6 +131,38 @@ class SharePointSyncTests(unittest.TestCase):
         self.assertEqual(len(hits), 1)
         self.assertFalse(hits[0]["approved_for_use"])
         self.assertIn("discovery-only", hits[0]["warning"])
+
+    def test_sync_tags_record_from_configured_successful_rfp_folder(self) -> None:
+        config = SyncConfig(
+            tenant_id="tenant",
+            client_id="client",
+            client_secret="secret",
+            site_id="site",
+            drive_id="drive",
+            source_library="Library",
+            state_dir=self.temp_dir / "state",
+            truth_source_corpus_dir=self.temp_dir / "truth-source",
+            update_inbox_corpus_dir=self.temp_dir / "update-inbox",
+            truth_source_folder="RFP Knowledge/Client Segments",
+            update_inbox_folder="RFP Knowledge/Incoming Updates",
+            allowed_extensions=[".md"],
+            metadata_fields=self.config.metadata_fields,
+            sharepoint_structure={
+                "client_segment_root": "RFP Knowledge/Client Segments",
+                "general_documents_root": "RFP Knowledge/Documents",
+            },
+            approved_default=False,
+        )
+        service = SharePointSyncService(config, client=SegmentFolderGraphClient())
+
+        service.sync()
+        record = service.corpus.get("doc-1")
+
+        self.assertIsNotNone(record)
+        assert record is not None
+        self.assertEqual(record.document_type, "rfp")
+        self.assertIn("enterprise", record.client_segments)
+        self.assertEqual(record.metadata["sharepoint_folder_role"]["role"], "successful_rfps")
 
 
 if __name__ == "__main__":

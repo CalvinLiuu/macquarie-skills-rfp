@@ -13,10 +13,11 @@ Use this skill whenever new source documents arrive.
 
 Workflow:
 
-1. Sync both `true_source` and `update_inbox`.
-2. Build staged Markdown views if the new material needs better structure before review.
-3. Preserve document typing so staged RFPs, Macquarie documents, and competitor brochures stay in separate lanes.
-4. Use `prepare_source_refresh` to compare staged documents with the trusted source set.
-5. Treat the refresh report as the decision surface for human owners.
-6. After approval, use `promote_source_refresh` to move reviewed candidates into the local true-source corpus.
-7. Do not assume staged material is ready for drafting just because it exists in SharePoint.
+1. Confirm the configured SharePoint structure with `describe_sharepoint_structure`.
+2. Sync both `true_source` and `update_inbox`.
+3. Build staged Markdown views if the new material needs better structure before review.
+4. Preserve document typing so staged RFPs, Macquarie documents, and competitor brochures stay in separate lanes.
+5. Use `prepare_source_refresh` to compare staged documents with the trusted source set.
+6. Treat the refresh report as the decision surface for human owners.
+7. After approval, use `promote_source_refresh` to move reviewed candidates into the local true-source corpus.
+8. Do not assume staged material is ready for drafting just because it exists in SharePoint.

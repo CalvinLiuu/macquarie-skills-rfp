@@ -12,6 +12,7 @@ from .models import AnswerContract
 from .rfp_parser import parse_rfp_file
 from .response_indexer import render_response_index_json, render_response_index_markdown
 from .sharepoint_graph import SharePointSyncService, SyncConfig
+from .sharepoint_structure import build_sharepoint_structure_plan
 from .source_refresh import SourceRefreshService
 
 
@@ -49,6 +50,13 @@ def build_parser() -> argparse.ArgumentParser:
     build_docs.add_argument("--output-dir")
     build_docs.add_argument("--config")
     build_docs.add_argument("--folder-key", default="truth_source", choices=["truth_source", "update_inbox"])
+
+    structure = subparsers.add_parser(
+        "describe-sharepoint-structure",
+        help="Render the expected SharePoint folder structure and business-action mapping",
+    )
+    structure.add_argument("--config", required=True)
+    structure.add_argument("--output-dir", default="data/outputs")
 
     analysis_plan = subparsers.add_parser(
         "plan-document-analysis",
@@ -135,6 +143,14 @@ def main() -> None:
         else:
             parser.error("build-knowledge-markdown requires either --corpus-dir or --config")
         result = build_markdown_knowledge_base(corpus, output_dir=args.output_dir)
+        print(json.dumps(result.to_dict(), indent=2))
+        return
+    if args.command == "describe-sharepoint-structure":
+        config = SyncConfig.from_file(args.config, allow_missing_secret=True)
+        result = build_sharepoint_structure_plan(
+            config.sharepoint_structure,
+            output_dir=args.output_dir,
+        )
         print(json.dumps(result.to_dict(), indent=2))
         return
     if args.command == "plan-document-analysis":

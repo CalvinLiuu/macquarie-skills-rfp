@@ -12,6 +12,7 @@ from .models import AnswerContract, Question
 from .rfp_parser import parse_rfp_file, parse_rfp_text
 from .response_indexer import render_response_index_json, render_response_index_markdown
 from .sharepoint_graph import SharePointSyncService, SyncConfig
+from .sharepoint_structure import build_sharepoint_structure_plan
 from .source_refresh import SourceRefreshService
 
 
@@ -109,6 +110,18 @@ TOOLS: list[dict[str, Any]] = [
                 "config_path": {"type": "string"},
                 "folder_key": {"type": "string", "default": "truth_source"},
             },
+        },
+    },
+    {
+        "name": "describe_sharepoint_structure",
+        "description": "Render the configured SharePoint folder structure and business-action mapping for client segment and general document folders.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "config_path": {"type": "string"},
+                "output_dir": {"type": "string", "default": "data/outputs"},
+            },
+            "required": ["config_path"],
         },
     },
     {
@@ -268,6 +281,13 @@ def _call_tool(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
         corpus = CorpusStore(arguments.get("corpus_dir", "data/truth-source"))
         record = corpus.get(arguments["document_id"])
         return {"record": record.to_dict() if record else None}
+    if name == "describe_sharepoint_structure":
+        config = SyncConfig.from_file(arguments["config_path"], allow_missing_secret=True)
+        result = build_sharepoint_structure_plan(
+            config.sharepoint_structure,
+            output_dir=arguments.get("output_dir", "data/outputs"),
+        )
+        return result.to_dict()
     if name == "plan_document_analysis":
         corpus = CorpusStore(arguments.get("corpus_dir", "data/truth-source"))
         result = build_document_analysis_plan(

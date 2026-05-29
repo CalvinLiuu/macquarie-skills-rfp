@@ -122,8 +122,13 @@ CLIENT_SEGMENT_KEYWORDS: dict[str, tuple[str, ...]] = {
         "series a",
         "series b",
         "high growth",
+    ),
+    "small_business": (
         "small business",
+        "small-business",
         "smb",
+        "sme",
+        "small to medium",
     ),
     "enterprise": (
         "enterprise",

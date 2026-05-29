@@ -3,6 +3,7 @@ from __future__ import annotations
 import shutil
 import tempfile
 import unittest
+import json
 from pathlib import Path
 
 from rfp_copilot.corpus import CorpusStore
@@ -60,6 +61,37 @@ class McpServerTests(unittest.TestCase):
 
         self.assertEqual(len(result["assignments"]), 1)
         self.assertEqual(result["assignments"][0]["document_type"], "rfp")
+
+    def test_describe_sharepoint_structure_tool(self) -> None:
+        config_path = self.temp_dir / "knowledge-source.json"
+        config_path.write_text(
+            json.dumps(
+                {
+                    "tenant_id": "tenant",
+                    "client_id": "client",
+                    "client_secret": "secret",
+                    "site_id": "site",
+                    "drive_id": "drive",
+                    "source_library": "Library",
+                    "sharepoint_structure": {
+                        "client_segment_root": "RFP Knowledge/Client Segments",
+                        "general_documents_root": "RFP Knowledge/Documents",
+                    },
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        result = _call_tool(
+            "describe_sharepoint_structure",
+            {
+                "config_path": str(config_path),
+                "output_dir": str(self.temp_dir / "outputs"),
+            },
+        )
+
+        self.assertEqual(len(result["folder_roles"]), 15)
+        self.assertTrue(Path(result["report_path"]).exists())
 
 
 if __name__ == "__main__":
