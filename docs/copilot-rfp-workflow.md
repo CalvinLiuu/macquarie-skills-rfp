@@ -6,19 +6,27 @@ This repository treats SharePoint as the upstream system of record and GitHub Co
 
 The flow is:
 
-1. Sync `true source` from SharePoint into `data/truth-source/`.
-2. Sync `update inbox` from SharePoint into `data/update-inbox/`.
-3. Normalize source content into:
+1. Confirm the configured SharePoint structure for segment RFP folders and general document folders.
+2. Sync `true source` from SharePoint into `data/truth-source/`.
+3. Sync `update inbox` from SharePoint into `data/update-inbox/`.
+4. Normalize source content into:
    - per-document Markdown
    - domain packs like `security`, `compliance`, `sovereignty`, `power`, and `cooling`
    - client-segment packs like `government/security` or `enterprise/sovereignty`
    - document-type packs that separate RFPs, Macquarie estate/current-state material, Macquarie implementation material, Macquarie guidelines, and competitor brochures
-4. Build a document analysis plan that assigns each document type to a dedicated specialist sub-agent.
-5. Compare staged content with true-source content and generate a refresh report.
-6. Parse the RFP and render it as structured Markdown.
-7. Build a response index that captures format expectations, knowledge-pack hints, and human guidance requirements.
-8. Retrieve evidence from the true-source corpus.
-9. Draft, check, and package answers.
+5. Build a document analysis plan that assigns each document type to a dedicated specialist sub-agent.
+6. Compare staged content with true-source content and generate a refresh report.
+7. Parse the RFP and render it as structured Markdown.
+8. Build a response index that captures format expectations, knowledge-pack hints, and human guidance requirements.
+9. Retrieve evidence from the true-source corpus.
+10. Draft, check, and package answers.
+
+## Business Actions
+
+- `mark-successful-rfp-document-information`: identify successful RFP documents in the correct segment folder, normalize them, and route them to the RFP requirements specialist.
+- `refresh-successful-document-information`: use general documentation such as new infrastructure, equipment changes, or important centre information to refresh approved successful information.
+
+These business actions call lower-level skills. The business action decides why the work is being done; the sub-skills handle normalization, routing, source refresh, retrieval, review gates, and packaging.
 
 ## Specialist Agents
 
@@ -37,6 +45,8 @@ The flow is:
 
 - `documentation-normalization`
 - `document-routing`
+- `mark-successful-rfp-document-information`
+- `refresh-successful-document-information`
 - `source-refresh`
 - `rfp-intake`
 - `response-indexing`

@@ -2,11 +2,17 @@
 
 ## Operating Model
 
-The repository assumes two SharePoint folders:
+The repository assumes a controlled SharePoint structure:
 
-1. `true source`
+1. Client segment folders for `enterprise`, `hyperscaler`, `small_business`, and `government`.
+2. Within each segment:
+   - `Previous RFP`
+   - `Successful RFPs`
+   - `Successful Up To Date Information`
+3. General document folders for important information, new infrastructure, and equipment changes.
+4. `true source`
    The trusted knowledge base used for retrieval and drafting.
-2. `update inbox`
+5. `update inbox`
    New material that must be normalized, compared, and reviewed before it joins the trusted set.
 
 ## Source Curation

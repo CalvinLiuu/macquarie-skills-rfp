@@ -260,3 +260,26 @@ class DocumentAnalysisPlan:
 
     def to_dict(self) -> dict[str, Any]:
         return _deep_convert(self)
+
+
+@dataclass
+class SharePointFolderRole:
+    role: str
+    folder_path: str
+    purpose: str
+    client_segment: str = ""
+    document_type: str = ""
+    business_action: str = ""
+
+    def to_dict(self) -> dict[str, Any]:
+        return _deep_convert(self)
+
+
+@dataclass
+class SharePointStructurePlan:
+    folder_roles: list[SharePointFolderRole] = field(default_factory=list)
+    report_path: str = ""
+    manifest_path: str = ""
+
+    def to_dict(self) -> dict[str, Any]:
+        return _deep_convert(self)

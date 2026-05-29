@@ -13,6 +13,7 @@ from .corpus import CorpusStore, chunk_text
 from .markdown_formatter import build_markdown_knowledge_base
 from .models import EvidenceRecord, SyncResult
 from .rfp_parser import UnsupportedFormatError, extract_text_from_binary
+from .sharepoint_structure import match_sharepoint_folder_role
 from .taxonomy import (
     analysis_focus_for_document_type,
     detect_client_segments,
@@ -156,6 +157,7 @@ class SyncConfig:
     update_inbox_folder: str = ""
     allowed_extensions: list[str] = field(default_factory=lambda: [".md", ".txt", ".docx", ".pdf"])
     metadata_fields: dict[str, str] = field(default_factory=dict)
+    sharepoint_structure: dict[str, Any] = field(default_factory=dict)
     region: str = ""
     approved_default: bool = False
     live_unapproved_allowed: bool = False
@@ -196,6 +198,7 @@ class SyncConfig:
             update_inbox_folder=payload.get("update_inbox_folder", ""),
             allowed_extensions=payload.get("allowed_extensions", [".md", ".txt", ".docx", ".pdf"]),
             metadata_fields=payload.get("metadata_fields", {}),
+            sharepoint_structure=payload.get("sharepoint_structure", {}),
             region=payload.get("region", ""),
             approved_default=payload.get("approved_default", False),
             live_unapproved_allowed=payload.get("live_unapproved_allowed", False),
@@ -302,12 +305,20 @@ class SharePointSyncService:
         fields = self.client.get_item_fields(self.config.drive_id, item["id"])
         raw_path = self.corpus.write_raw_text(item["id"], text)
         source_path = self._item_path(item)
+        folder_role = match_sharepoint_folder_role(self.config.sharepoint_structure, source_path)
+        folder_document_type = folder_role.document_type if folder_role else ""
         document_type = detect_document_type(
             source_path,
             filename,
             text,
-            metadata_value=self._lookup_field(fields, "document_type"),
+            metadata_value=self._lookup_field(fields, "document_type") or folder_document_type,
         )
+        client_segments = detect_client_segments(source_path, filename, text)
+        if folder_role and folder_role.client_segment and folder_role.client_segment not in client_segments:
+            client_segments.append(folder_role.client_segment)
+        metadata = dict(fields)
+        if folder_role:
+            metadata["sharepoint_folder_role"] = folder_role.to_dict()
         record = EvidenceRecord(
             document_id=item["id"],
             source_url=item.get("webUrl", ""),
@@ -321,14 +332,14 @@ class SharePointSyncService:
             version=item.get("eTag", item.get("cTag", "")),
             text_chunks=chunk_text(text),
             domains=detect_domains(filename, text),
-            client_segments=detect_client_segments(source_path, filename, text),
+            client_segments=client_segments,
             source_collection=self.folder_key,
             source_path=source_path,
             raw_path=str(raw_path),
             document_type=document_type,
             specialist_agent=specialist_agent_for_document_type(document_type),
             analysis_focus=analysis_focus_for_document_type(document_type),
-            metadata=fields,
+            metadata=metadata,
         )
         self.corpus.upsert(record)
         result.synced += 1

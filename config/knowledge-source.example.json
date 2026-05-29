@@ -26,6 +26,41 @@
     "classification": "Classification",
     "document_type": "DocumentType"
   },
+  "sharepoint_structure": {
+    "client_segment_root": "RFP Knowledge/Client Segments",
+    "client_segments": {
+      "enterprise": {
+        "root": "RFP Knowledge/Client Segments/Enterprise",
+        "previous_rfps": "RFP Knowledge/Client Segments/Enterprise/Previous RFP",
+        "successful_rfps": "RFP Knowledge/Client Segments/Enterprise/Successful RFPs",
+        "successful_current_info": "RFP Knowledge/Client Segments/Enterprise/Successful Up To Date Information"
+      },
+      "hyperscaler": {
+        "root": "RFP Knowledge/Client Segments/Hyperscalers",
+        "previous_rfps": "RFP Knowledge/Client Segments/Hyperscalers/Previous RFP",
+        "successful_rfps": "RFP Knowledge/Client Segments/Hyperscalers/Successful RFPs",
+        "successful_current_info": "RFP Knowledge/Client Segments/Hyperscalers/Successful Up To Date Information"
+      },
+      "small_business": {
+        "root": "RFP Knowledge/Client Segments/Small Business",
+        "previous_rfps": "RFP Knowledge/Client Segments/Small Business/Previous RFP",
+        "successful_rfps": "RFP Knowledge/Client Segments/Small Business/Successful RFPs",
+        "successful_current_info": "RFP Knowledge/Client Segments/Small Business/Successful Up To Date Information"
+      },
+      "government": {
+        "root": "RFP Knowledge/Client Segments/Government",
+        "previous_rfps": "RFP Knowledge/Client Segments/Government/Previous RFP",
+        "successful_rfps": "RFP Knowledge/Client Segments/Government/Successful RFPs",
+        "successful_current_info": "RFP Knowledge/Client Segments/Government/Successful Up To Date Information"
+      }
+    },
+    "general_documents_root": "RFP Knowledge/Documents",
+    "general_documents": {
+      "important_information": "RFP Knowledge/Documents/Important Information",
+      "infrastructure_changes": "RFP Knowledge/Documents/New Infrastructure",
+      "equipment_changes": "RFP Knowledge/Documents/Equipment Changes"
+    }
+  },
   "paths": {
     "truth_source_corpus_dir": "data/truth-source",
     "update_inbox_corpus_dir": "data/update-inbox",
