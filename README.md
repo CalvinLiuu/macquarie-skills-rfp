@@ -23,6 +23,96 @@ This repository now implements a two-layer SharePoint knowledge model for RFP wo
 - `config/`: SharePoint and answer profile examples
 - `docs/`: workflow and operating-model notes
 
+## Process Folder Structure
+
+Use this folder structure to keep the skill-guided process aligned. Top-level folders are committed to the repository; deeper `data/` folders are generated or refreshed by the MCP runtime when agents run the skills.
+
+```text
+.
+|-- .github/
+|   |-- copilot-instructions.md
+|   |-- ISSUE_TEMPLATE/
+|   |   `-- rfp-skill-task.yml
+|   |-- workflows/
+|   |   `-- rfp-skill-guided-task.yml
+|   |-- agents/
+|   |   |-- rfp-orchestrator.agent.md
+|   |   |-- source-curator.agent.md
+|   |   |-- rfp-analyst.agent.md
+|   |   |-- response-indexer.agent.md
+|   |   |-- human-guidance-review.agent.md
+|   |   `-- specialist analysis agents
+|   `-- skills/
+|       |-- rfp-intake/
+|       |-- response-indexing/
+|       |-- evidence-retrieval/
+|       |-- answer-drafting/
+|       |-- source-refresh/
+|       |-- documentation-normalization/
+|       |-- document-routing/
+|       |-- gap-and-risk-check/
+|       |-- human-guidance-gate/
+|       |-- compliance-packaging/
+|       |-- mark-successful-rfp-document-information/
+|       `-- refresh-successful-document-information/
+|-- config/
+|   |-- knowledge-source.example.json
+|   `-- answer-profile.example.json
+|-- data/
+|   |-- truth-source/
+|   |   |-- evidence/
+|   |   |-- raw/
+|   |   `-- markdown/
+|   |       |-- documents/
+|   |       |-- domains/
+|   |       |-- client-segments/
+|   |       `-- document-types/
+|   |-- update-inbox/
+|   |   |-- evidence/
+|   |   |-- raw/
+|   |   `-- markdown/
+|   |-- outputs/
+|   |   |-- source-decision-register.md
+|   |   |-- refresh-reports/
+|   |   |-- document-analysis-plans/
+|   |   |-- structured-rfps/
+|   |   |-- response-indexes/
+|   |   `-- answer-packages/
+|   |-- state/
+|   `-- mirror/
+|-- docs/
+|-- examples/
+|-- rfp_copilot/
+`-- tests/
+```
+
+Folder responsibilities:
+
+- `.github/skills/` defines how agents should work. This is the process layer.
+- `.github/agents/` defines who should do each part of the work. This is the role layer.
+- `.github/workflows/` starts a manual skill-guided GitHub Actions run. It should stay a thin handoff layer.
+- `config/` stores examples for SharePoint and answer preferences. Real secrets should not be committed.
+- `data/truth-source/` is the trusted evidence mirror. Agents can draft from this only when evidence is approved.
+- `data/update-inbox/` is staged material. Agents can analyze it, but cannot treat it as trusted until a human approves promotion.
+- `data/outputs/source-decision-register.md` is the single decision document for freshness, conflicts, user questions, approvals, and promotion history.
+- `data/outputs/refresh-reports/` stores source-refresh outputs that feed the decision register.
+- `data/outputs/document-analysis-plans/` stores routing plans for specialist agents.
+- `data/truth-source/markdown/client-segments/<segment>/` stores consolidated client-segment knowledge packs, such as Enterprise-specific security or power material.
+- `data/truth-source/markdown/domains/` stores consolidated cross-client domain knowledge packs.
+- `data/outputs/structured-rfps/`, `response-indexes/`, and `answer-packages/` hold bid-specific working outputs.
+- `data/state/` stores sync state and checkpoints.
+- `data/mirror/` is a local mirror or scratch location. It is not trusted evidence unless promoted into `data/truth-source/`.
+- `rfp_copilot/` exposes deterministic MCP tools to the skills. It should not become a script or command-workflow layer.
+
+Naming rules:
+
+- Use **client-segment knowledge pack** for consolidated reusable content by segment, such as `enterprise/security.md`.
+- Use **domain knowledge pack** for consolidated reusable content by topic across segments, such as `security.md`.
+- Use **source decision register** for the review log that records conflicts, user questions, approvals, rejections, and promotion decisions.
+- Do not use the decision register as the consolidated document store. It explains what changed and what was approved; the knowledge packs hold the reusable content.
+
+Example: if SharePoint contains several Enterprise documents, the approved reusable content should be consolidated into client-segment knowledge packs such as `data/truth-source/markdown/client-segments/enterprise/security.md` or `data/truth-source/markdown/client-segments/enterprise/power.md`. The source decision register should only record which Enterprise sources were reviewed, what conflicted, what the user approved, and which packs were rebuilt.
+
 ## Operating Model
 
 The intended workflow is:
@@ -78,6 +168,223 @@ This folder should guide AI agents rather than collect task scripts.
 5. Produce reviewable outputs in `data/outputs/` with citations, gaps, confidence, follow-ups, and required attachments.
 
 There is no `scripts/` directory and no installable console entry point. The retained Python package is the MCP runtime for `sharepoint-knowledge/*` tools because the skills need deterministic access to SharePoint sync, parsing, normalization, response indexing, and answer-contract helpers.
+
+## Full Process
+
+Use this process whenever work enters the repository through an issue, a Copilot chat, or the manual GitHub Actions workflow.
+
+### 1. Capture The Task
+
+- Start from a clear natural-language request.
+- Use `.github/ISSUE_TEMPLATE/rfp-skill-task.yml` for repeatable handoff.
+- Select the primary skill or business action before doing any work.
+- Include the relevant RFP path, source folder, SharePoint location, desired output path, and any known review owner.
+
+Expected output: a task with enough context for an AI agent to choose the right skill and produce a reviewable artifact.
+
+### 2. Apply Repository Instructions
+
+- Read `.github/copilot-instructions.md`.
+- Confirm the no-scripts rule for the task.
+- Use `docs/script-exceptions.md` only when an executable bridge is unavoidable.
+- Keep business logic in `.github/skills/*/SKILL.md` and `.github/agents/*.agent.md`.
+
+Expected output: a skill-guided plan, not a command sequence.
+
+### 3. Choose The Skill Path
+
+- For new RFPs, start with `rfp-intake`.
+- For reusable winning material, start with `mark-successful-rfp-document-information`.
+- For new or changed general documentation, start with `refresh-successful-document-information` or `source-refresh`.
+- For answer production, move through `response-indexing`, `evidence-retrieval`, `answer-drafting`, `gap-and-risk-check`, `human-guidance-gate`, and `compliance-packaging`.
+
+Expected output: the selected skill, any supporting sub-skills, and the specialist agent that should handle deeper analysis.
+
+### 4. Curate Source Material
+
+- Treat SharePoint `true source` as trusted evidence.
+- Treat SharePoint `update inbox` as staged material.
+- Use `documentation-normalization` to create structured Markdown, domain packs, client-segment packs, and document-type packs.
+- Use `document-routing` to separate RFPs, Macquarie current-state material, implementation material, guidelines, competitor brochures, and general knowledge.
+
+Expected output: normalized knowledge packs and a document analysis plan that keeps specialists inside their evidence lanes.
+
+### 5. Refresh Trusted Evidence
+
+- Use `source-refresh` when staged documents need to update trusted knowledge.
+- Compare staged content against `true source`.
+- Produce a refresh report that shows proposed additions, updates, conflicts, stale sources, and owner review needs.
+- Promote only approved candidates.
+
+Expected output: a human-review refresh surface before any staged material becomes trusted evidence.
+
+### 6. Intake The RFP
+
+- Use `rfp-intake` to parse the RFP or bid pack.
+- Preserve question IDs through the whole workflow.
+- Capture deadlines, deliverables, target client segments, domains, expected answer shape, and attachment needs.
+- Render the RFP into structured Markdown when it helps later agents reason safely.
+
+Expected output: structured RFP questions that later skills can trust.
+
+### 7. Build The Response Index
+
+- Use `response-indexing` before drafting.
+- Map each question to response format, related domains, related client segments, suggested evidence packs, and human-guidance flags.
+- Route specialist analysis to the right agent when interpretation is needed.
+
+Expected output: a production index that explains how each answer should be built.
+
+### 8. Retrieve Evidence
+
+- Use `evidence-retrieval` against the approved true-source corpus first.
+- Prefer evidence with strong overlap to the question, domain, client segment, and document type.
+- Label live SharePoint findings as unconfirmed unless they are already mirrored and approved.
+- Treat missing, stale, or conflicting evidence as a gap.
+
+Expected output: citations and evidence records that can support each answer claim.
+
+### 9. Draft Answers
+
+- Use `answer-drafting` only after response indexing and evidence retrieval.
+- Keep every answer inside the contract: `question_id`, `question_text`, `draft_answer`, `citations[]`, `confidence`, `gaps[]`, `followups[]`, and `required_attachments[]`.
+- Avoid unsupported commitments, especially for commercial, legal, privacy, attachment-heavy, and government-sensitive questions.
+
+Expected output: evidence-backed answer contracts that are useful but still reviewable.
+
+### 10. Review Risk And Human Guidance
+
+- Use `gap-and-risk-check` before packaging.
+- Use `human-guidance-gate` wherever owner approval, clarification, attachments, or high-risk wording are required.
+- Lower confidence rather than hiding uncertainty.
+- Keep the human action visible and specific.
+
+Expected output: explicit gaps, follow-ups, confidence changes, and owner review points.
+
+### 11. Package The Deliverable
+
+- Use `compliance-packaging` after review.
+- Preserve citations, confidence, gaps, follow-ups, attachment requirements, and human-review flags.
+- Write outputs under `data/outputs/` unless the task specifies another repository path.
+
+Expected output: a Markdown, JSON, or CSV deliverable that can be reviewed and carried into the bid process.
+
+### 12. Run Through GitHub Actions When Needed
+
+- Use `.github/workflows/rfp-skill-guided-task.yml` for a manual skill-guided run.
+- Provide `skill`, `task_context`, `target_paths`, and `output_file`.
+- Keep the workflow as a thin Copilot handoff. Do not add task-specific shell logic.
+- Review the workflow artifact before treating it as final.
+
+Expected output: a generated artifact from the selected skill plus a visible script exception notice for the GitHub Actions bridge.
+
+## Data Refresh And Source Decisions
+
+Use this process separately from bid drafting whenever new material arrives, source material changes, or agents find conflicting information. The goal is to keep all reusable evidence aligned before it influences answers.
+
+### Source Decision Register
+
+Maintain one decision document at `data/outputs/source-decision-register.md`. Every data-refresh run should update or produce this document so all agents can reason from the same review surface.
+
+The source decision register should contain:
+
+- run context: date, requester, trigger, source folders, and selected skill
+- source inventory: new, changed, unchanged, stale, and missing documents
+- canonical facts: approved facts that can be reused in future answers
+- conflicts: competing claims, source paths, owners, dates, and confidence
+- user questions: specific decisions required from the human owner
+- promotion decisions: approved, rejected, deferred, and superseded material
+- agent handoffs: which specialist agent reviewed each document lane
+- downstream impact: affected domains, client segments, RFP responses, and answer packs
+- next actions: owner, due date, and follow-up needed before drafting
+
+Use this outline for `source-decision-register.md`:
+
+```markdown
+# Source Decision Register
+
+## Run Context
+- Date:
+- Requester:
+- Trigger:
+- Source folders:
+- Selected skill:
+
+## Source Inventory
+| Status | Source path | Owner | Date | Document type | Notes |
+| --- | --- | --- | --- | --- | --- |
+
+## Canonical Facts
+| Fact ID | Approved fact | Source path | Owner | Applies to | Confidence |
+| --- | --- | --- | --- | --- | --- |
+
+## Conflict Register
+| Conflict ID | Topic | Source A | Source B | Impact | User question | Status |
+| --- | --- | --- | --- | --- | --- | --- |
+
+## User Decisions
+| Decision ID | Question | User decision | Approved source | Superseded source | Follow-up |
+| --- | --- | --- | --- | --- | --- |
+
+## Agent Handoffs
+| Agent | Lane | Inputs reviewed | Findings | Next owner |
+| --- | --- | --- | --- | --- |
+
+## Promotion Log
+| Candidate | Decision | Destination | Approved by | Notes |
+| --- | --- | --- | --- | --- |
+
+## Downstream Impact
+| Area | Impacted files or answers | Required action |
+| --- | --- | --- |
+
+## Next Actions
+| Owner | Action | Due date | Blocking? |
+| --- | --- | --- | --- |
+```
+
+### Refresh Flow
+
+1. `source-curator` starts with `source-refresh` when new or changed material appears in `data/update-inbox/`.
+2. The agent tells the user which folder is being reviewed, which skill is active, and that staged content will not become trusted without approval.
+3. `documentation-normalization` converts staged material into structured Markdown.
+4. `document-routing` assigns each document to the right specialist lane.
+5. Specialist agents review only their lane:
+   - `rfp-requirements-analyst` for RFP and tender material
+   - `macquarie-current-state-analyst` for current-state and incumbent context
+   - `macquarie-implementation-analyst` for implementation history and lessons learned
+   - `macquarie-guideline-analyst` for standards, policies, and guardrails
+   - `competitor-brochure-analyst` for competitor collateral
+   - `general-knowledge-analyst` for broad reusable capability evidence
+6. `gap-and-risk-check` compares staged findings with `data/truth-source/`.
+7. `human-guidance-gate` turns unresolved conflicts into direct user questions.
+8. The user confirms which information is correct, outdated, superseded, or needs more evidence.
+9. Approved decisions are recorded in `source-decision-register.md`.
+10. Only approved candidates are promoted into `data/truth-source/`.
+11. `documentation-normalization` rebuilds the trusted Markdown packs so future RFP answers use aligned information.
+12. The agent summarizes what changed, which packs were rebuilt, which decisions are still open, and where the user can review the output.
+
+### Agent Communication During Skill Execution
+
+When an agent executes `source-refresh` or `refresh-successful-document-information`, it should give the user a clear running explanation:
+
+1. **Skill active:** name the skill or business action being used.
+2. **Inputs:** name the SharePoint folder or repository path being reviewed.
+3. **Purpose:** state whether the agent is refreshing trusted evidence, checking staged updates, or resolving conflicts.
+4. **Where content goes:** explain that approved consolidated content is rebuilt into knowledge packs under `data/truth-source/markdown/`.
+5. **Where decisions go:** explain that conflicts and approvals are recorded in `data/outputs/source-decision-register.md`.
+6. **Human decisions:** list any direct user questions before promoting or trusting new information.
+7. **Result:** summarize approved changes, unresolved gaps, rebuilt packs, and downstream RFP impacts.
+
+### Conflict Rules
+
+- Do not silently choose between conflicting sources.
+- Prefer newer material only when it is approved and does not conflict with a controlled policy, contract, or owner-approved source.
+- Ask the user when two approved sources disagree, when ownership is unclear, or when a source changes commercial, legal, compliance, security, privacy, or government-sensitive claims.
+- Mark unresolved facts as gaps instead of drafting from them.
+- Keep rejected or superseded claims visible in the source decision register so agents do not reintroduce them later.
+
+Expected output: a current `source-decision-register.md`, updated trusted packs, and clear user decisions for every conflict that blocks reliable drafting.
 
 ## GitHub Actions Usage
 

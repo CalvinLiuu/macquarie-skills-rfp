@@ -14,6 +14,8 @@ This repository is a skill-first RFP workflow. Start every task by choosing the 
   - how a reviewer can validate the result
 - Never promote staged SharePoint material into trusted evidence without an explicit human review surface.
 - Keep citations, gaps, follow-ups, confidence, and required attachments visible in every answer contract.
+- When executing a skill, tell the user which skill is active, what input folder or file is being reviewed, what output will be produced, what requires human approval, and where the result will be written.
+- Use `source decision register` for `data/outputs/source-decision-register.md`. Use `client-segment knowledge pack` and `domain knowledge pack` for consolidated reusable content. Do not describe the decision register as the consolidated document store.
 
 ## GitHub Actions
 

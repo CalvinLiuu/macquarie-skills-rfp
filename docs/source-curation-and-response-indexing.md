@@ -25,8 +25,18 @@ The curation flow is:
 4. Build a document analysis plan so the right sub-agent receives only the relevant document set.
 5. Compare staged documents to `true source`.
 6. Produce a refresh report with explicit human-review requirements.
+7. Update `data/outputs/source-decision-register.md` with conflicts, user questions, approvals, rejected claims, superseded claims, and promotion decisions.
+8. Rebuild trusted client-segment and domain knowledge packs only after approval.
 
 This is intentionally conservative. Staged content should not become trusted drafting material without review.
+
+Naming:
+
+- `source decision register`: the decision log for review and approval.
+- `client-segment knowledge pack`: consolidated approved content for a segment, such as `enterprise/security`.
+- `domain knowledge pack`: consolidated approved content for a topic across segments, such as `security`.
+
+The source decision register is not the consolidated document store. It records decisions that explain why content is or is not trusted.
 
 ## Response Indexing
 

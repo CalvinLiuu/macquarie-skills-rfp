@@ -17,7 +17,7 @@ The flow is:
    - client-segment packs like `government/security` or `enterprise/sovereignty`
    - document-type packs that separate RFPs, Macquarie estate/current-state material, Macquarie implementation material, Macquarie guidelines, and competitor brochures
 5. Build a document analysis plan that assigns each document type to a dedicated specialist sub-agent.
-6. Compare staged content with true-source content and generate a refresh report.
+6. Compare staged content with true-source content, generate a refresh report, and update the source decision register when user decisions are required.
 7. Parse the RFP and render it as structured Markdown.
 8. Build a response index that captures format expectations, knowledge-pack hints, and human guidance requirements.
 9. Retrieve evidence from the true-source corpus.
@@ -94,3 +94,4 @@ For day-to-day handoff, create an issue from `.github/ISSUE_TEMPLATE/rfp-skill-t
 - Human escalation on staged source promotion, conflicts, commercial wording, attachments, and government-sensitive responses
 - True-source retrieval preferred over live SharePoint search
 - No standalone scripts for RFP business work; executable exceptions must be documented in `docs/script-exceptions.md`
+- `data/outputs/source-decision-register.md` records decisions and conflicts; consolidated reusable content belongs in trusted client-segment and domain knowledge packs
