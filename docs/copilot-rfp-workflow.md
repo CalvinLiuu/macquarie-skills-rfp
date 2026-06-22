@@ -4,6 +4,8 @@
 
 This repository treats SharePoint as the upstream system of record and GitHub Copilot as the orchestration and drafting surface.
 
+The repository is intentionally skill-first. GitHub Copilot should move through `.github/skills/` and `.github/agents/` before using any executable bridge. GitHub Actions can start a selected skill through the manual `RFP skill-guided task` workflow, but the workflow must stay a thin handoff layer.
+
 The flow is:
 
 1. Confirm the configured SharePoint structure for segment RFP folders and general document folders.
@@ -27,6 +29,21 @@ The flow is:
 - `refresh-successful-document-information`: use general documentation such as new infrastructure, equipment changes, or important centre information to refresh approved successful information.
 
 These business actions call lower-level skills. The business action decides why the work is being done; the sub-skills handle normalization, routing, source refresh, retrieval, review gates, and packaging.
+
+## GitHub Actions Handoff
+
+Use `.github/workflows/rfp-skill-guided-task.yml` when a GitHub Actions run should start a skill-guided task.
+
+The workflow accepts:
+
+- primary skill or business action
+- natural-language task context
+- relevant repository paths or SharePoint locations
+- output file path for the generated artifact
+
+The workflow includes a script exception notice because GitHub Actions needs runner commands to invoke Copilot CLI. It must not contain task-specific business logic; that belongs in the selected skill and specialist agent.
+
+For day-to-day handoff, create an issue from `.github/ISSUE_TEMPLATE/rfp-skill-task.yml`, select the skill, provide context, and assign the task to the appropriate Copilot agent.
 
 ## Specialist Agents
 
@@ -76,3 +93,4 @@ These business actions call lower-level skills. The business action decides why 
 - Document typing is required before specialist analysis so each sub-agent stays inside its own evidence lane
 - Human escalation on staged source promotion, conflicts, commercial wording, attachments, and government-sensitive responses
 - True-source retrieval preferred over live SharePoint search
+- No standalone scripts for RFP business work; executable exceptions must be documented in `docs/script-exceptions.md`

@@ -1,0 +1,61 @@
+name: RFP skill-guided task
+description: Hand an RFP, evidence, curation, or review task to Copilot using repository skills.
+title: "[RFP skill]: "
+labels:
+  - rfp-skill
+  - copilot-task
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template when a Copilot agent should act through the repository skills instead of through scripts.
+  - type: dropdown
+    id: skill
+    attributes:
+      label: Primary skill or business action
+      description: Pick the skill Copilot should start from.
+      options:
+        - rfp-intake
+        - response-indexing
+        - evidence-retrieval
+        - answer-drafting
+        - gap-and-risk-check
+        - compliance-packaging
+        - source-refresh
+        - mark-successful-rfp-document-information
+        - refresh-successful-document-information
+        - documentation-normalization
+        - document-routing
+        - human-guidance-gate
+    validations:
+      required: true
+  - type: textarea
+    id: task_context
+    attributes:
+      label: Task context
+      description: Describe the RFP, source material, decision, or output you need.
+      placeholder: "Use the selected skill to..."
+    validations:
+      required: true
+  - type: textarea
+    id: target_paths
+    attributes:
+      label: Relevant files, folders, or SharePoint locations
+      description: Include repository paths, output expectations, or SharePoint folder names.
+      placeholder: |
+        examples/sample-rfp.md
+        data/outputs/
+        SharePoint: true source / government / Successful RFPs
+    validations:
+      required: false
+  - type: checkboxes
+    id: guardrails
+    attributes:
+      label: Guardrails
+      options:
+        - label: Start from the selected `.github/skills/*/SKILL.md` file before acting.
+          required: true
+        - label: Do not add scripts or shell automation unless a script exception notice explains why it is unavoidable.
+          required: true
+        - label: Keep human-review needs visible for commercial, legal, compliance, attachment-heavy, and government-sensitive content.
+          required: true

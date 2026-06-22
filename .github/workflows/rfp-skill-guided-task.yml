@@ -1,0 +1,103 @@
+name: RFP skill-guided task
+
+on:
+  workflow_dispatch:
+    inputs:
+      skill:
+        description: Repository skill or business action to start from.
+        required: true
+        type: choice
+        options:
+          - rfp-intake
+          - response-indexing
+          - evidence-retrieval
+          - answer-drafting
+          - gap-and-risk-check
+          - compliance-packaging
+          - source-refresh
+          - mark-successful-rfp-document-information
+          - refresh-successful-document-information
+          - documentation-normalization
+          - document-routing
+          - human-guidance-gate
+      task_context:
+        description: Natural-language task context for Copilot.
+        required: true
+        type: string
+      target_paths:
+        description: Optional repository paths, output paths, or SharePoint locations.
+        required: false
+        type: string
+      output_file:
+        description: File Copilot should write with the result inside the workflow artifact.
+        required: true
+        type: string
+        default: data/outputs/github-action-skill-run.md
+
+permissions:
+  contents: read
+
+jobs:
+  use-skill:
+    name: Use selected repository skill
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Python for MCP runtime
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Set up Node.js for Copilot CLI
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Script exception notice
+        run: |
+          {
+            echo "### Script exception notice"
+            echo "GitHub Actions requires runner commands to install and invoke Copilot CLI."
+            echo "The shell in this workflow is limited to bootstrapping Copilot and passing one natural-language prompt."
+            echo "RFP task logic must remain in .github/skills, .github/agents, and the sharepoint-knowledge MCP tools."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Install Copilot CLI
+        run: npm install -g @github/copilot
+
+      - name: Run selected skill through Copilot
+        env:
+          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_CLI_PAT }}
+          RFP_SKILL: ${{ inputs.skill }}
+          RFP_CONTEXT: ${{ inputs.task_context }}
+          RFP_TARGET_PATHS: ${{ inputs.target_paths }}
+          RFP_OUTPUT_FILE: ${{ inputs.output_file }}
+        run: |
+          mkdir -p "$(dirname "$RFP_OUTPUT_FILE")"
+          cat > .copilot-skill-task.md <<PROMPT
+          Use the /${RFP_SKILL} repository skill for this task.
+
+          Task context:
+          ${RFP_CONTEXT}
+
+          Relevant paths or SharePoint locations:
+          ${RFP_TARGET_PATHS}
+
+          Write the result to ${RFP_OUTPUT_FILE}.
+
+          Follow .github/copilot-instructions.md. Do not create scripts. If an executable step is unavoidable, include a script exception notice in the result that explains why.
+          PROMPT
+          copilot -p "$(cat .copilot-skill-task.md)" --allow-tool=write --no-ask-user
+          if [ -f "$RFP_OUTPUT_FILE" ]; then
+            cat "$RFP_OUTPUT_FILE" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload skill output
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rfp-skill-output
+          path: data/outputs/
+          if-no-files-found: ignore

@@ -30,6 +30,8 @@ Operate with these rules:
    - client-segment packs for client-specific nuance
    - domain packs for cross-client reusable evidence
    - document-type packs when the task is about RFP interpretation, Macquarie context, or competitor analysis
+9. Use repository skills and `sharepoint-knowledge/*` tools before considering executable steps.
+10. Do not create scripts or task-specific shell automation. If an executable bridge is unavoidable, include a script exception notice with the reason, dependent skill, remaining business logic, and validation path.
 
 Break the task into these repository skills:
 
@@ -48,11 +50,11 @@ Break the task into these repository skills:
 
 Suggested workflow:
 
-- Run `describe_sharepoint_structure` when folder layout or business-action routing is unclear.
+- Use `describe_sharepoint_structure` when folder layout or business-action routing is unclear.
 - Sync `truth_source` and `update_inbox`.
-- Run `prepare_source_refresh` when new staged material arrives.
+- Use `prepare_source_refresh` when new staged material arrives.
 - Build the true-source Markdown knowledge base.
-- Run `plan_document_analysis` and route documents to the correct specialist agents.
+- Use `plan_document_analysis` and route documents to the correct specialist agents.
 - Render the RFP into Markdown and build the response index.
 - Retrieve evidence from the true-source corpus.
 - Draft answers, then run review and packaging.

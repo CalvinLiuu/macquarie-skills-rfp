@@ -13,7 +13,10 @@ This repository now implements a two-layer SharePoint knowledge model for RFP wo
 
 - `.github/agents/`: orchestrator plus specialist agents
 - `.github/skills/`: repository skills for curation, intake, indexing, drafting, and review
-- `rfp_copilot/`: Python package for SharePoint sync, normalization, response indexing, curation, and MCP transport
+- `.github/copilot-instructions.md`: repository-wide instructions for skill-first work
+- `.github/ISSUE_TEMPLATE/`: issue handoff template for skill-guided Copilot tasks
+- `.github/workflows/`: manual GitHub Actions entry point for selected repository skills
+- `rfp_copilot/`: MCP runtime for the `sharepoint-knowledge/*` tools used by agents and skills
 - `data/truth-source/`: mirrored trusted content and generated Markdown packs
 - `data/update-inbox/`: mirrored staged source updates
 - `data/outputs/`: refresh reports, structured RFP markdown, response indexes, and answer outputs
@@ -64,104 +67,37 @@ Both business actions rely on sub-skills such as `documentation-normalization`, 
 - Human review remains mandatory for commercial, legal, compliance, attachment-heavy, and government-sensitive content.
 - PDF extraction is best effort and requires `pdftotext`; text, markdown, CSV, JSON, TSV, and DOCX work without extra Python dependencies.
 
-## Quick Start
+## Skill-First Operation
 
-1. Copy the example configuration:
+This folder should guide AI agents rather than collect task scripts.
 
-```bash
-cp config/knowledge-source.example.json config/knowledge-source.json
-cp config/answer-profile.example.json config/answer-profile.json
-```
+1. Start from `.github/copilot-instructions.md`.
+2. Pick the closest repository skill from `.github/skills/`.
+3. Use the matching custom agent from `.github/agents/` when specialist analysis is needed.
+4. Keep the task context, target paths, evidence status, and expected output visible.
+5. Produce reviewable outputs in `data/outputs/` with citations, gaps, confidence, follow-ups, and required attachments.
 
-2. Set the SharePoint secret:
+There is no `scripts/` directory and no installable console entry point. The retained Python package is the MCP runtime for `sharepoint-knowledge/*` tools because the skills need deterministic access to SharePoint sync, parsing, normalization, response indexing, and answer-contract helpers.
 
-```bash
-export SHAREPOINT_CLIENT_SECRET="..."
-```
+## GitHub Actions Usage
 
-3. Run the tests:
+Use the manual `RFP skill-guided task` workflow when a GitHub Actions run should hand work to a selected skill.
 
-```bash
-python3 -m unittest discover -s tests -v
-```
+Workflow inputs:
 
-4. Parse the sample RFP:
+- `skill`: the repository skill or business action to start from
+- `task_context`: the natural-language task request
+- `target_paths`: optional repository paths, output paths, or SharePoint locations
+- `output_file`: where Copilot should write the run artifact under `data/outputs/`
 
-```bash
-python3 -m rfp_copilot.cli parse-rfp \
-  --input examples/sample-rfp.md
-```
+The workflow requires a `COPILOT_CLI_PAT` repository secret for Copilot CLI authentication. Its runner commands are limited to installing Copilot CLI, building one natural-language prompt, invoking the selected skill, and attaching the output artifact.
 
-5. Sync the true-source folder:
+## Script Policy
 
-```bash
-python3 -m rfp_copilot.cli sync \
-  --config config/knowledge-source.json \
-  --folder-key truth_source
-```
-
-6. Sync the update inbox:
-
-```bash
-python3 -m rfp_copilot.cli sync \
-  --config config/knowledge-source.json \
-  --folder-key update_inbox
-```
-
-7. Build the true-source Markdown knowledge base:
-
-```bash
-python3 -m rfp_copilot.cli build-knowledge-markdown \
-  --config config/knowledge-source.json \
-  --folder-key truth_source
-```
-
-8. Describe the expected SharePoint folder structure:
-
-```bash
-python3 -m rfp_copilot.cli describe-sharepoint-structure \
-  --config config/knowledge-source.json \
-  --output-dir data/outputs
-```
-
-9. Build the document analysis plan:
-
-```bash
-python3 -m rfp_copilot.cli plan-document-analysis \
-  --corpus-dir data/truth-source \
-  --output-dir data/outputs
-```
-
-10. Build the source refresh report:
-
-```bash
-python3 -m rfp_copilot.cli prepare-source-refresh \
-  --config config/knowledge-source.json
-```
-
-11. Promote an approved refresh candidate into the local true-source corpus:
-
-```bash
-python3 -m rfp_copilot.cli promote-source-refresh \
-  --config config/knowledge-source.json \
-  --candidate-id refresh-example
-```
-
-12. Render the RFP into structured Markdown:
-
-```bash
-python3 -m rfp_copilot.cli render-rfp-markdown \
-  --input examples/sample-rfp.md \
-  --output data/outputs/sample-rfp-structured.md
-```
-
-13. Build the response index:
-
-```bash
-python3 -m rfp_copilot.cli render-response-index \
-  --input examples/sample-rfp.md \
-  --output data/outputs/sample-rfp-response-index.md
-```
+- Do not add standalone scripts, task-specific shell automation, or a `scripts/` directory.
+- Keep process guidance in `.github/skills/*/SKILL.md` and `.github/agents/*.agent.md`.
+- If an executable bridge is unavoidable, include a visible script exception notice with the reason, dependent skill or agent, remaining business logic, and validation path.
+- Current exceptions are documented in `docs/script-exceptions.md`.
 
 ## Copilot Usage
 

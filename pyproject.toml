@@ -10,9 +10,5 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = []
 
-[project.scripts]
-rfp-copilot = "rfp_copilot.cli:main"
-
 [tool.setuptools]
 packages = ["rfp_copilot"]
-
