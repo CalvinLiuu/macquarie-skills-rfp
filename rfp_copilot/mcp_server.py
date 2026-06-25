@@ -9,6 +9,7 @@ from .corpus import CorpusStore
 from .document_analysis import build_document_analysis_plan
 from .markdown_formatter import build_markdown_knowledge_base, render_rfp_markdown
 from .models import AnswerContract, Question
+from .rfp_generation import generate_rfp_response_run
 from .rfp_parser import parse_rfp_file, parse_rfp_text
 from .response_indexer import render_response_index_json, render_response_index_markdown
 from .sharepoint_graph import SharePointSyncService, SyncConfig
@@ -201,6 +202,20 @@ TOOLS: list[dict[str, Any]] = [
             "required": ["answers"],
         },
     },
+    {
+        "name": "generate_rfp_response",
+        "description": (
+            "Run the end-to-end approved-evidence RFP response generation workflow from a bid brief, "
+            "writing the run folder artifacts without syncing or promoting update-inbox content."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "bid_brief_path": {"type": "string"},
+                "bid_brief": {"type": "object"},
+            },
+        },
+    },
 ]
 
 
@@ -365,6 +380,12 @@ def _call_tool(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
     if name == "package_answers":
         answers = [AnswerContract.from_dict(item) for item in arguments["answers"]]
         return {"rendered": package_answers(answers, output_format=arguments.get("format", "markdown"))}
+    if name == "generate_rfp_response":
+        result = generate_rfp_response_run(
+            arguments.get("bid_brief_path"),
+            bid_brief=arguments.get("bid_brief"),
+        )
+        return result.to_dict()
     raise ValueError(f"Unknown tool: {name}")
 
 

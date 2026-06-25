@@ -8,6 +8,7 @@ This repository now implements a two-layer SharePoint knowledge model for RFP wo
 - explicit SharePoint folder roles for segment RFP history, successful RFPs, current successful information, and general documentation
 - document-type routing that separates RFPs, Macquarie context, and competitor collateral
 - specialist Copilot agents and skills for source curation, document routing, RFP analysis, response indexing, drafting, and human review
+- an end-to-end `generate-rfp-response` business action that turns a bid brief into a dated company run folder
 
 ## Repository Layout
 
@@ -20,7 +21,7 @@ This repository now implements a two-layer SharePoint knowledge model for RFP wo
 - `data/truth-source/`: mirrored trusted content and generated Markdown packs
 - `data/update-inbox/`: mirrored staged source updates
 - `data/outputs/`: refresh reports, structured RFP markdown, response indexes, and answer outputs
-- `config/`: SharePoint and answer profile examples
+- `config/`: SharePoint, bid brief, and answer profile examples
 - `docs/`: workflow and operating-model notes
 
 ## Process Folder Structure
@@ -43,6 +44,7 @@ Use this folder structure to keep the skill-guided process aligned. Top-level fo
 |   |   |-- human-guidance-review.agent.md
 |   |   `-- specialist analysis agents
 |   `-- skills/
+|       |-- generate-rfp-response/
 |       |-- rfp-intake/
 |       |-- response-indexing/
 |       |-- evidence-retrieval/
@@ -57,6 +59,7 @@ Use this folder structure to keep the skill-guided process aligned. Top-level fo
 |       `-- refresh-successful-document-information/
 |-- config/
 |   |-- knowledge-source.example.json
+|   |-- bid-brief.example.json
 |   `-- answer-profile.example.json
 |-- data/
 |   |-- truth-source/
@@ -74,9 +77,11 @@ Use this folder structure to keep the skill-guided process aligned. Top-level fo
 |   |-- outputs/
 |   |   |-- source-decision-register.md
 |   |   |-- refresh-reports/
+|   |   |-- past-rfp-package-inventories/
 |   |   |-- document-analysis-plans/
 |   |   |-- structured-rfps/
 |   |   |-- response-indexes/
+|   |   |-- rfp-response-runs/
 |   |   `-- answer-packages/
 |   |-- state/
 |   `-- mirror/
@@ -96,10 +101,12 @@ Folder responsibilities:
 - `data/update-inbox/` is staged material. Agents can analyze it, but cannot treat it as trusted until a human approves promotion.
 - `data/outputs/source-decision-register.md` is the single decision document for freshness, conflicts, user questions, approvals, and promotion history.
 - `data/outputs/refresh-reports/` stores source-refresh outputs that feed the decision register.
+- `data/outputs/past-rfp-package-inventories/` stores inventories for folders that contain multiple past RFP documents.
 - `data/outputs/document-analysis-plans/` stores routing plans for specialist agents.
 - `data/truth-source/markdown/client-segments/<segment>/` stores consolidated client-segment knowledge packs, such as Enterprise-specific security or power material.
 - `data/truth-source/markdown/domains/` stores consolidated cross-client domain knowledge packs.
 - `data/outputs/structured-rfps/`, `response-indexes/`, and `answer-packages/` hold bid-specific working outputs.
+- `data/outputs/rfp-response-runs/<date-company-or-opportunity>/` stores end-to-end generation run folders from `generate-rfp-response`.
 - `data/state/` stores sync state and checkpoints.
 - `data/mirror/` is a local mirror or scratch location. It is not trusted evidence unless promoted into `data/truth-source/`.
 - `rfp_copilot/` exposes deterministic MCP tools to the skills. It should not become a script or command-workflow layer.
@@ -109,9 +116,12 @@ Naming rules:
 - Use **client-segment knowledge pack** for consolidated reusable content by segment, such as `enterprise/security.md`.
 - Use **domain knowledge pack** for consolidated reusable content by topic across segments, such as `security.md`.
 - Use **source decision register** for the review log that records conflicts, user questions, approvals, rejections, and promotion decisions.
+- Use **past RFP package** for a folder of related historical RFP material, such as the original tender, submitted response, addenda, clarifications, attachments, pricing, internal notes, and outcome notes.
 - Do not use the decision register as the consolidated document store. It explains what changed and what was approved; the knowledge packs hold the reusable content.
 
 Example: if SharePoint contains several Enterprise documents, the approved reusable content should be consolidated into client-segment knowledge packs such as `data/truth-source/markdown/client-segments/enterprise/security.md` or `data/truth-source/markdown/client-segments/enterprise/power.md`. The source decision register should only record which Enterprise sources were reviewed, what conflicted, what the user approved, and which packs were rebuilt.
+
+Example: if more files appear under an Enterprise `Previous RFP` folder, treat that folder as a past RFP package first. Build an inventory of all documents in the folder, classify each document, ask whether the RFP was won or approved for reuse, and only then promote approved facts into Enterprise knowledge packs.
 
 ## Operating Model
 
@@ -145,10 +155,11 @@ The intended workflow is:
 
 The project separates business actions from the lower-level skills that make them happen:
 
+- `generate-rfp-response`: creates an end-to-end RFP response run from a bid brief using approved true-source evidence and bid-specific customer context.
 - `mark-successful-rfp-document-information`: confirms successful RFP documents in the right segment folder and turns them into reusable evidence.
 - `refresh-successful-document-information`: updates successful up-to-date information from new general documents such as infrastructure, power, cooling, and equipment changes.
 
-Both business actions rely on sub-skills such as `documentation-normalization`, `document-routing`, `source-refresh`, `evidence-retrieval`, and `human-guidance-gate`.
+These business actions rely on sub-skills such as `documentation-normalization`, `document-routing`, `source-refresh`, `evidence-retrieval`, and `human-guidance-gate`.
 
 ## Assumptions Used In This V1
 
@@ -168,6 +179,14 @@ This folder should guide AI agents rather than collect task scripts.
 5. Produce reviewable outputs in `data/outputs/` with citations, gaps, confidence, follow-ups, and required attachments.
 
 There is no `scripts/` directory and no installable console entry point. The retained Python package is the MCP runtime for `sharepoint-knowledge/*` tools because the skills need deterministic access to SharePoint sync, parsing, normalization, response indexing, and answer-contract helpers.
+
+## V1 Workflow Split
+
+Use `generate-rfp-response` for the main end-to-end drafting workflow. The user supplies a bid brief, incoming RFP file or bid pack folder, approved true-source corpus/config, customer context, optional win themes, review owners, and output preferences. The run writes `bid-brief.normalized.json`, `structured-rfp.md`, `response-index.md`, `answer-contracts.json`, `draft-answers.md`, `human-review-actions.md`, and `run-record.md` under `data/outputs/rfp-response-runs/<date-company-or-opportunity>/`.
+
+Customer/RFP context can influence indexing, retrieval filters, tone, win themes, and review prompts, but it is labeled as bid-context input rather than approved capability evidence. Factual capability claims must still cite approved `true source` evidence.
+
+Use `source-refresh` or `refresh-successful-document-information` separately when new or changed material needs to update trusted knowledge. Generation must not sync, read, promote, or consolidate `update_inbox`.
 
 ## Full Process
 
@@ -193,6 +212,7 @@ Expected output: a skill-guided plan, not a command sequence.
 
 ### 3. Choose The Skill Path
 
+- For end-to-end RFP response generation, start with `generate-rfp-response`.
 - For new RFPs, start with `rfp-intake`.
 - For reusable winning material, start with `mark-successful-rfp-document-information`.
 - For new or changed general documentation, start with `refresh-successful-document-information` or `source-refresh`.
@@ -215,6 +235,7 @@ Expected output: normalized knowledge packs and a document analysis plan that ke
 - Compare staged content against `true source`.
 - Produce a refresh report that shows proposed additions, updates, conflicts, stale sources, and owner review needs.
 - Promote only approved candidates.
+- If the staged content is a past RFP package, inventory the whole folder before promotion and keep package relationships visible.
 
 Expected output: a human-review refresh surface before any staged material becomes trusted evidence.
 
@@ -277,6 +298,74 @@ Expected output: a Markdown, JSON, or CSV deliverable that can be reviewed and c
 - Review the workflow artifact before treating it as final.
 
 Expected output: a generated artifact from the selected skill plus a visible script exception notice for the GitHub Actions bridge.
+
+## Past RFP Package Discovery
+
+Use this process when more documentation is found inside a folder for past RFP documentation, such as a segment `Previous RFP` or `Successful RFPs` folder.
+
+Do not treat every file in a past RFP folder as reusable evidence. A folder may contain mixed material:
+
+- original client RFP or tender documents
+- submitted responses
+- successful response versions
+- addenda, clarifications, and client questions
+- attachments such as case studies, CVs, certificates, diagrams, or policies
+- pricing, legal, commercial, privacy, or security material
+- internal review notes, win/loss notes, debriefs, and draft working files
+- Macquarie current-state, implementation, guideline, or competitor documents stored with the RFP package
+
+### Package Flow
+
+1. `source-curator` tells the user it found a past RFP package and names the SharePoint folder or repository path.
+2. The agent explains that the folder will be inventoried first and that nothing will be promoted into trusted evidence until the user approves it.
+3. `documentation-normalization` converts readable documents into structured Markdown.
+4. `document-routing` classifies each file by document type and specialist lane.
+5. The agent writes a package inventory under `data/outputs/past-rfp-package-inventories/`.
+6. `rfp-requirements-analyst` reviews RFP/tender documents, previous answer structure, scoring signals, mandatory requirements, and answer patterns.
+7. Other specialist agents review only their relevant lanes when the package includes current-state, implementation, guideline, competitor, or general knowledge material.
+8. `human-guidance-gate` asks the user direct questions before reuse:
+   - Was this RFP won, lost, withdrawn, or unknown?
+   - Which submitted response version is the approved version?
+   - Which attachments are approved for reuse?
+   - Are pricing, legal, security, privacy, or commercial claims still current?
+   - Which sources are superseded or should never be reused?
+9. Approved decisions are recorded in `data/outputs/source-decision-register.md`.
+10. Only approved facts and documents are promoted into `data/truth-source/`.
+11. Trusted client-segment, domain, and document-type knowledge packs are rebuilt.
+12. The agent summarizes the package, approval decisions, rebuilt packs, unresolved questions, and downstream RFP impact.
+
+### Package Inventory
+
+Use this outline for each inventory file under `data/outputs/past-rfp-package-inventories/`:
+
+```markdown
+# Past RFP Package Inventory
+
+## Package Context
+- Segment:
+- Source folder:
+- RFP or client name:
+- Outcome status:
+- Review owner:
+- Selected skill:
+
+## Documents Found
+| Document | Source path | Document role | Specialist lane | Reuse status | User question |
+| --- | --- | --- | --- | --- | --- |
+
+## Package Relationships
+| Relationship | Documents | Notes |
+| --- | --- | --- |
+
+## Reuse Decisions Needed
+| Question | Why it matters | Blocking? |
+| --- | --- | --- |
+
+## Recommended Next Step
+- 
+```
+
+Expected output: a package inventory, source decision register updates, direct user questions for unclear reuse decisions, and rebuilt knowledge packs only for approved reusable material.
 
 ## Data Refresh And Source Decisions
 
@@ -412,6 +501,7 @@ The repository is designed to support:
 
 - `rfp-orchestrator`: end-to-end coordination
 - `source-curator`: update-inbox curation and refresh reporting
+- `generate-rfp-response`: business action for end-to-end bid drafting from a bid brief
 - `mark-successful-rfp-document-information`: business action for marking winning RFP material as reusable evidence
 - `refresh-successful-document-information`: business action for updating approved successful information from general documentation
 - `rfp-requirements-analyst`: tender-specific requirement analysis

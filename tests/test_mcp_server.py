@@ -93,6 +93,45 @@ class McpServerTests(unittest.TestCase):
         self.assertEqual(len(result["folder_roles"]), 15)
         self.assertTrue(Path(result["report_path"]).exists())
 
+    def test_generate_rfp_response_tool(self) -> None:
+        corpus = CorpusStore(self.temp_dir / "truth-source")
+        corpus.upsert(
+            EvidenceRecord(
+                document_id="doc-1",
+                source_url="https://example.com/security",
+                source_library="Library",
+                title="Security Controls",
+                owner="Security",
+                effective_date="2026-01-01",
+                review_date="2026-12-31",
+                classification="internal",
+                approved_for_bids=True,
+                version="1",
+                text_chunks=["Security controls include monitored Australian hosting services."],
+                domains=["security"],
+                client_segments=["enterprise"],
+            )
+        )
+        rfp_path = self.temp_dir / "rfp.md"
+        rfp_path.write_text("1. Outline your security controls.", encoding="utf-8")
+
+        result = _call_tool(
+            "generate_rfp_response",
+            {
+                "bid_brief": {
+                    "company_name": "Acme Bank",
+                    "run_date": "2026-06-24",
+                    "rfp_input_path": str(rfp_path),
+                    "truth_source_corpus_dir": str(self.temp_dir / "truth-source"),
+                    "output_root": str(self.temp_dir / "outputs"),
+                    "target_client_segments": ["enterprise"],
+                }
+            },
+        )
+
+        self.assertEqual(result["run_id"], "2026-06-24-acme-bank")
+        self.assertTrue(Path(result["artifacts"]["run-record.md"]).exists())
+
 
 if __name__ == "__main__":
     unittest.main()

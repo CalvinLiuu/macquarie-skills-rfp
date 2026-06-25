@@ -38,6 +38,23 @@ Naming:
 
 The source decision register is not the consolidated document store. It records decisions that explain why content is or is not trusted.
 
+## Past RFP Packages
+
+When a `Previous RFP` or `Successful RFPs` folder contains multiple documents, treat the folder as a past RFP package before marking anything reusable.
+
+The package inventory should distinguish:
+
+- original RFP or tender
+- submitted response
+- approved successful response
+- addenda and clarifications
+- attachments and evidence artifacts
+- pricing, legal, commercial, privacy, or security material
+- internal drafts, win/loss notes, and debriefs
+- unrelated Macquarie, competitor, guideline, or general knowledge documents stored with the package
+
+Only approved successful material should become trusted evidence. If the outcome, owner, approved version, or reuse permission is unclear, ask the user and record the decision in `data/outputs/source-decision-register.md`.
+
 ## Response Indexing
 
 The response index is built before drafting and should answer:
@@ -48,6 +65,8 @@ The response index is built before drafting and should answer:
 - Which knowledge packs should the answer use?
 - Which document specialist should interpret the supporting material first?
 - Where does a human owner need to approve, clarify, or supply artifacts?
+
+For end-to-end bid drafting, use `generate-rfp-response` with a bid brief. Customer/RFP context from the bid brief can influence indexing and retrieval posture, but it is not approved evidence. Source consolidation and promotion remain separate `source-refresh` work and must not happen inside generation.
 
 ## Human Guidance Triggers
 

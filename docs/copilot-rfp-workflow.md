@@ -18,6 +18,7 @@ The flow is:
    - document-type packs that separate RFPs, Macquarie estate/current-state material, Macquarie implementation material, Macquarie guidelines, and competitor brochures
 5. Build a document analysis plan that assigns each document type to a dedicated specialist sub-agent.
 6. Compare staged content with true-source content, generate a refresh report, and update the source decision register when user decisions are required.
+   - If a segment `Previous RFP` or `Successful RFPs` folder contains multiple documents, inventory it as a past RFP package before treating any content as reusable evidence.
 7. Parse the RFP and render it as structured Markdown.
 8. Build a response index that captures format expectations, knowledge-pack hints, and human guidance requirements.
 9. Retrieve evidence from the true-source corpus.
@@ -25,10 +26,13 @@ The flow is:
 
 ## Business Actions
 
+- `generate-rfp-response`: read a bid brief, consume approved true-source evidence plus bid-specific customer/RFP context, and write an end-to-end run folder with structured RFP, response index, draft answers, answer contracts, human-review actions, and a run record.
 - `mark-successful-rfp-document-information`: identify successful RFP documents in the correct segment folder, normalize them, and route them to the RFP requirements specialist.
 - `refresh-successful-document-information`: use general documentation such as new infrastructure, equipment changes, or important centre information to refresh approved successful information.
 
 These business actions call lower-level skills. The business action decides why the work is being done; the sub-skills handle normalization, routing, source refresh, retrieval, review gates, and packaging.
+
+`generate-rfp-response` is intentionally separate from source refresh. It may optionally sync `truth_source` when the bid brief sets `sync_before_run`, but it must not sync, read, promote, or consolidate `update_inbox`.
 
 ## GitHub Actions Handoff
 
@@ -62,6 +66,7 @@ For day-to-day handoff, create an issue from `.github/ISSUE_TEMPLATE/rfp-skill-t
 
 - `documentation-normalization`
 - `document-routing`
+- `generate-rfp-response`
 - `mark-successful-rfp-document-information`
 - `refresh-successful-document-information`
 - `source-refresh`

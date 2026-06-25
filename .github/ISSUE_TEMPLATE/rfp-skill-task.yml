@@ -15,6 +15,7 @@ body:
       label: Primary skill or business action
       description: Pick the skill Copilot should start from.
       options:
+        - generate-rfp-response
         - rfp-intake
         - response-indexing
         - evidence-retrieval

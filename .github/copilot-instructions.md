@@ -16,6 +16,8 @@ This repository is a skill-first RFP workflow. Start every task by choosing the 
 - Keep citations, gaps, follow-ups, confidence, and required attachments visible in every answer contract.
 - When executing a skill, tell the user which skill is active, what input folder or file is being reviewed, what output will be produced, what requires human approval, and where the result will be written.
 - Use `source decision register` for `data/outputs/source-decision-register.md`. Use `client-segment knowledge pack` and `domain knowledge pack` for consolidated reusable content. Do not describe the decision register as the consolidated document store.
+- When a `Previous RFP` or `Successful RFPs` folder contains multiple documents, treat it as a `past RFP package`: inventory the whole folder, classify each document, ask for outcome and reuse approval, then promote only approved reusable material.
+- Use `generate-rfp-response` for end-to-end bid drafting from a bid brief. It may consume approved `true source` evidence and customer/RFP bid context, but it must not sync, read, promote, or consolidate `update_inbox`.
 
 ## GitHub Actions
 

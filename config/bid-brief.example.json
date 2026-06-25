@@ -1,0 +1,38 @@
+{
+  "company_name": "Example Customer",
+  "opportunity_name": "Data Centre Services RFP",
+  "run_date": "2026-06-24",
+  "rfp_input_path": "examples/sample-rfp.md",
+  "primary_rfp_path": "",
+  "truth_source_corpus_dir": "data/truth-source",
+  "config_path": "config/knowledge-source.json",
+  "sync_before_run": false,
+  "target_client_segments": [
+    "enterprise"
+  ],
+  "customer_context": {
+    "industry": "financial services",
+    "region": "Australia",
+    "notes": "Use only as bid-specific context. Do not treat as approved Macquarie capability evidence."
+  },
+  "bid_context_paths": [],
+  "win_themes": [
+    "Australian data residency",
+    "reviewable evidence-backed responses"
+  ],
+  "response_tone": "clear, factual, evidence-backed",
+  "answer_profile_path": "config/answer-profile.example.json",
+  "submission_deadline": "2026-06-30",
+  "mandatory_attachments": [
+    "key-personnel-cvs",
+    "relevant-case-studies"
+  ],
+  "human_reviewers": [
+    "Bid Manager",
+    "Compliance Owner"
+  ],
+  "requested_package_formats": [
+    "json",
+    "csv"
+  ]
+}
